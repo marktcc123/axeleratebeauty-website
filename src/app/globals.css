@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+:root {
+  --sand-50: #f7f4ef;
+  --sand-100: #efe9e0;
+  --sand-200: #e2d8cb;
+  --ash: #b8aea3;
+  --stone-deep: #3d3833;
+  --charcoal: #2a2623;
+  --ink: #1f1c19;
+  --cream: #faf8f5;
+  --muted: #6e665e;
+  --accent-mst: #6b8a9e;
+  --accent-lfu: #8a7a94;
+  --accent-sts: #7a8f74;
+  --accent-tac: #a67c6d;
+  --accent-wbu: #b8896a;
+  --glow: rgba(255, 248, 240, 0.55);
+}
+
+@theme inline {
+  --color-sand-50: var(--sand-50);
+  --color-sand-100: var(--sand-100);
+  --color-sand-200: var(--sand-200);
+  --color-ash: var(--ash);
+  --color-stone-deep: var(--stone-deep);
+  --color-charcoal: var(--charcoal);
+  --color-ink: var(--ink);
+  --color-cream: var(--cream);
+  --color-muted: var(--muted);
+  --color-accent-mst: var(--accent-mst);
+  --color-accent-lfu: var(--accent-lfu);
+  --color-accent-sts: var(--accent-sts);
+  --color-accent-tac: var(--accent-tac);
+  --color-accent-wbu: var(--accent-wbu);
+  --font-sans: var(--font-avenir);
+  --font-serif: var(--font-emilio);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--cream);
+  color: var(--charcoal);
+  font-family: var(--font-avenir), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--sand-200) 70%, var(--accent-wbu));
+  color: var(--ink);
+}
+
+.bg-atmosphere {
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 0%, rgba(184, 174, 163, 0.28), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 20%, rgba(184, 137, 106, 0.12), transparent 50%),
+    linear-gradient(180deg, var(--sand-50) 0%, var(--cream) 45%, var(--sand-100) 100%);
+}
+
+.bg-atmosphere-dark {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 0%, rgba(90, 78, 68, 0.55), transparent 60%),
+    linear-gradient(180deg, #1a1715 0%, #2a2623 100%);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
