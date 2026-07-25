@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
 import { Logo } from "./Logo";
 
 export function Hero() {
@@ -9,12 +10,14 @@ export function Hero() {
   return (
     <section id="top" className="relative min-h-[100svh] overflow-hidden">
       <div className="absolute inset-0">
-        <img
-          src="/images/hero-duo.png"
-          alt="Two clients with radiant glass skin — Dermabell Express Facial result"
-          className="h-full w-full object-cover object-[78%_center] sm:object-[72%_center]"
+        <Image
+          src="/images/hero-duo.webp"
+          alt="Two clients with radiant glass skin after Dermabell Express Facial"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[78%_center] sm:object-[72%_center]"
         />
-        {/* White / sand atmosphere filter — keep left readable for copy */}
         <div className="absolute inset-0 bg-gradient-to-r from-white/92 via-sand-50/75 to-white/15 sm:via-sand-50/55 sm:to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-cream/85 via-transparent to-white/35" />
         <div className="absolute inset-0 bg-white/10" />
@@ -32,19 +35,15 @@ export function Hero() {
           </p>
 
           <h1 className="sr-only">Dermabell.</h1>
-          <Logo
-            variant="dark"
-            className="h-10 w-auto sm:h-14 lg:h-16"
-            priority
-          />
+          <Logo variant="dark" className="h-10 w-auto sm:h-14 lg:h-16" priority />
 
           <p className="mt-5 font-serif text-2xl leading-snug text-stone-deep text-balance sm:text-3xl lg:text-[2.15rem]">
             Monetize your existing clients with the K-Beauty Express Facial.
           </p>
 
           <p className="mt-5 max-w-md text-base leading-relaxed text-muted sm:text-lg">
-            Add a 40-minute premium Korean facial to your beauty store. 3× your
-            ticket, 5× your profit, with zero new fixed costs.
+            Add a 40-minute premium Korean facial to your beauty store. 3x your
+            ticket, 5x your profit, with zero new fixed costs.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -72,8 +71,8 @@ export function Hero() {
           className="mt-14 hidden max-w-xl grid-cols-3 gap-6 border-t border-stone-deep/15 pt-6 sm:grid"
         >
           {[
-            { label: "Service", value: "40–60 min" },
-            { label: "Ticket", value: "$89–$109" },
+            { label: "Service", value: "40-60 min" },
+            { label: "Protocol", value: "16 steps" },
             { label: "Launch", value: "4 weeks" },
           ].map((item) => (
             <div key={item.label}>

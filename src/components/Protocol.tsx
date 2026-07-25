@@ -3,6 +3,30 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FadeIn } from "./FadeIn";
+import { Media } from "./Media";
+
+const trainingShots = [
+  {
+    src: "/images/training/train-01.webp",
+    alt: "On-site team observing a live Express Facial demonstration",
+  },
+  {
+    src: "/images/training/train-02.webp",
+    alt: "Dermabell trainer reviewing products with partner staff",
+  },
+  {
+    src: "/images/training/train-03.webp",
+    alt: "Classroom training session for salon staff certification",
+  },
+  {
+    src: "/images/training/train-04.webp",
+    alt: "Hands-on facial technique training at the treatment bed",
+  },
+  {
+    src: "/images/training/train-05.webp",
+    alt: "Guided protocol practice with professional back-bar setup",
+  },
+] as const;
 
 type Step = {
   n: string;
@@ -33,7 +57,9 @@ const steps: Step[] = [
 
 export function Protocol() {
   const [active, setActive] = useState(0);
+  const [trainIndex, setTrainIndex] = useState(0);
   const current = steps[active];
+  const trainShot = trainingShots[trainIndex];
 
   return (
     <section id="protocol" className="bg-sand-100 py-24 sm:py-32">
@@ -46,21 +72,21 @@ export function Protocol() {
             One ritual. Sixteen steps. Glass-skin result.
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-muted">
-            Base protocol runs 40 minutes at $89. Ritual+ adds four upgrade steps —
-            blackhead softening, extraction, LED, and sculpting massage — for +20 minutes
-            and +$20. Existing staff learn it within 4 weeks.
+            Base protocol runs 40 minutes. Ritual+ adds four upgrade steps —
+            blackhead softening, extraction, LED, and sculpting massage — for +20 minutes.
+            Existing staff learn it within 4 weeks.
           </p>
         </FadeIn>
 
         <div className="mt-12 flex flex-wrap gap-4">
           <FadeIn className="border border-stone-deep/15 bg-cream px-6 py-5">
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted">The Protocol</p>
-            <p className="mt-1 font-serif text-3xl text-ink">$89 · 40 min</p>
+            <p className="mt-1 font-serif text-3xl text-ink">40 min</p>
             <p className="mt-1 text-sm text-muted">Steps 1–5, 10–16</p>
           </FadeIn>
           <FadeIn delay={0.08} className="border border-accent-wbu/40 bg-cream px-6 py-5">
             <p className="text-[10px] uppercase tracking-[0.2em] text-accent-wbu">Ritual+ Add-on</p>
-            <p className="mt-1 font-serif text-3xl text-ink">$109 · 60 min</p>
+            <p className="mt-1 font-serif text-3xl text-ink">60 min</p>
             <p className="mt-1 text-sm text-muted">Full 16 steps · ~30% upgrade rate</p>
           </FadeIn>
         </div>
@@ -132,13 +158,85 @@ export function Protocol() {
           </FadeIn>
         </div>
 
-        <FadeIn className="mt-16 max-w-2xl">
-          <p className="font-serif text-2xl text-ink">Trained in under 4 weeks.</p>
-          <p className="mt-3 text-muted leading-relaxed">
-            Sign in Week 1, soft launch by Week 4. On-site Dermabell trainer certifies
-            your existing staff on the 16-step SOP, front-desk scripts, and Ritual+
-            upsell — no medical equipment, no new hires required.
-          </p>
+        <FadeIn className="mt-20 grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-14 lg:items-center">
+          <div className="lg:max-w-none lg:pr-4">
+            <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-muted">
+              Staff Enablement
+            </p>
+            <h3 className="mt-4 font-serif text-3xl leading-[1.15] tracking-tight text-ink text-balance sm:text-4xl lg:text-[2.75rem]">
+              Trained in under 4 weeks.
+            </h3>
+            <p className="mt-5 max-w-md text-base leading-relaxed text-muted sm:text-lg sm:leading-relaxed">
+              Sign in Week 1, soft launch by Week 4. On-site Dermabell trainer certifies
+              your existing staff on the 16-step SOP, front-desk scripts, and Ritual+
+              upsell - no medical equipment, no new hires required.
+            </p>
+            <dl className="mt-8 grid max-w-md grid-cols-2 gap-x-6 gap-y-5 border-t border-stone-deep/15 pt-6">
+              <div>
+                <dt className="text-[10px] uppercase tracking-[0.2em] text-muted">Week 1</dt>
+                <dd className="mt-1 font-serif text-lg text-ink">Sign & plan</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase tracking-[0.2em] text-muted">Week 2-3</dt>
+                <dd className="mt-1 font-serif text-lg text-ink">Train on SOP</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase tracking-[0.2em] text-muted">Week 4</dt>
+                <dd className="mt-1 font-serif text-lg text-ink">Soft launch</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase tracking-[0.2em] text-muted">Outcome</dt>
+                <dd className="mt-1 font-serif text-lg text-ink">Staff certified</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="w-full">
+            <div className="overflow-hidden bg-cream">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={trainShot.src}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Media
+                    src={trainShot.src}
+                    alt={trainShot.alt}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 420px"
+                    className="aspect-[4/3]"
+                    imgClassName="object-cover"
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+            <div className="mt-2.5 grid grid-cols-5 gap-1.5">
+              {trainingShots.map((shot, i) => (
+                <button
+                  key={shot.src}
+                  type="button"
+                  aria-label={`Show training photo ${i + 1}`}
+                  onClick={() => setTrainIndex(i)}
+                  className={`overflow-hidden transition ${
+                    i === trainIndex
+                      ? "ring-2 ring-charcoal ring-offset-2 ring-offset-sand-100"
+                      : "opacity-65 hover:opacity-100"
+                  }`}
+                >
+                  <Media
+                    src={shot.src}
+                    alt=""
+                    fill
+                    sizes="72px"
+                    className="aspect-square"
+                    imgClassName="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
         </FadeIn>
       </div>
     </section>

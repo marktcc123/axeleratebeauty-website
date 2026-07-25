@@ -53,6 +53,7 @@ export const controlSolutions = [
     ingredient: "BB-BIONT",
     tone: "#c45c4a",
     blurb: "Microbiome balance that helps reduce blemish triggers.",
+    image: "/images/ampoules/t01.webp",
   },
   {
     code: "P02",
@@ -60,6 +61,7 @@ export const controlSolutions = [
     ingredient: "MATMARINE",
     tone: "#c8794a",
     blurb: "Pore-refining care for excess sebum and congestion.",
+    image: "/images/ampoules/p02.webp",
   },
   {
     code: "B03",
@@ -67,6 +69,7 @@ export const controlSolutions = [
     ingredient: "LIPOCHROMAN",
     tone: "#c9a04a",
     blurb: "Toning formula for radiance and antioxidant support.",
+    image: "/images/ampoules/b03.webp",
   },
   {
     code: "W04",
@@ -74,6 +77,7 @@ export const controlSolutions = [
     ingredient: "BRIGHLETTE",
     tone: "#8fa84a",
     blurb: "Brightening care that helps inhibit melanin synthesis.",
+    image: "/images/ampoules/w04.webp",
   },
   {
     code: "S05",
@@ -81,6 +85,7 @@ export const controlSolutions = [
     ingredient: "FENSEBIOME",
     tone: "#5f8f5a",
     blurb: "Soothing formula for comfort and defensive capacity.",
+    image: "/images/ampoules/s05.webp",
   },
   {
     code: "R06",
@@ -88,6 +93,7 @@ export const controlSolutions = [
     ingredient: "DAWNERGY",
     tone: "#4a9a8f",
     blurb: "Vitality-boosting formula for fatigued, dull-looking skin.",
+    image: "/images/ampoules/r06.webp",
   },
   {
     code: "F07",
@@ -95,6 +101,7 @@ export const controlSolutions = [
     ingredient: "CELLYNKAGE",
     tone: "#4a7fad",
     blurb: "Tightening formula for early signs of aging.",
+    image: "/images/ampoules/f07.webp",
   },
   {
     code: "W08",
@@ -102,6 +109,7 @@ export const controlSolutions = [
     ingredient: "REPROAGE",
     tone: "#4a5f9e",
     blurb: "Revitalization for smoother, more vibrant skin.",
+    image: "/images/ampoules/w08.webp",
   },
   {
     code: "V09",
@@ -109,6 +117,7 @@ export const controlSolutions = [
     ingredient: "Argireline",
     tone: "#6f4f8f",
     blurb: "Firming formula for density and a lifted appearance.",
+    image: "/images/ampoules/v09.webp",
   },
   {
     code: "E10",
@@ -116,6 +125,7 @@ export const controlSolutions = [
     ingredient: "EYEDELINE",
     tone: "#9a4a6a",
     blurb: "Eye-area care for anti-aging and antioxidant protection.",
+    image: "/images/ampoules/e10.webp",
   },
 ] as const;
 
@@ -147,10 +157,58 @@ export const boostPeels = [
 ] as const;
 
 export const highEssential = [
-  "Melting Mask",
-  "Luxe Glow Cream",
-  "Double Layer Emulsion Toner",
-  "Acti-Moist Silk Essence",
-  "Derma Cover Cream",
-  "Hydrating Bio-Gel Mask",
+  {
+    name: "Melting Mask",
+    detail: "Occlusive peel-off mask that drives active penetration for a glass-skin finish.",
+    image: "/images/retail/melting-hero.webp",
+  },
+  {
+    name: "Luxe Glow Cream",
+    detail: "Water-gloss finishing cream for dewy, camera-ready radiance at checkout.",
+    image: "/images/retail/luxe-cream.webp",
+  },
+  {
+    name: "Melting + Luxe Duo",
+    detail: "The retail attach pair guests take home after Express Facial.",
+    image: "/images/retail/melting-luxe.webp",
+  },
 ] as const;
+
+export const gallery = {
+  family: [
+    {
+      src: "/images/family/system-01.webp",
+      alt: "Dermabell Formula Completion Cream family on stepped display",
+    },
+    {
+      src: "/images/family/system-02.webp",
+      alt: "Dermabell Activators, Creams, Peels and Control Solutions lineup",
+    },
+    {
+      src: "/images/family/system-03.webp",
+      alt: "Dermabell Fit-formance system product group shot",
+    },
+  ],
+  studio: [
+    {
+      src: "/images/studio/studio-44.webp",
+      alt: "Dermabell wash-off pack product photography",
+      caption: "Wash-Off Packs",
+    },
+    {
+      src: "/images/studio/washoff-sts-scatter.webp",
+      alt: "STS Vital Wash-Off Pack with packaging",
+      caption: "STS Vital Wash-Off Pack",
+    },
+    {
+      src: "/images/studio/studio-64.webp",
+      alt: "Dermabell retail-ready product photography",
+      caption: "Retail-ready",
+    },
+  ],
+  accents: [
+    { src: "/images/retail/gold.webp", alt: "Dermabell gold-tone retail packaging" },
+    { src: "/images/retail/rose.webp", alt: "Dermabell rose-tone retail packaging" },
+    { src: "/images/retail/melting-pack.webp", alt: "Dermabell Melting Mask packaging" },
+  ],
+} as const;

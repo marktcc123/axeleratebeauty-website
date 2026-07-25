@@ -5,8 +5,7 @@ import { FadeIn } from "./FadeIn";
 const metrics = [
   {
     label: "Average Ticket",
-    from: "$30",
-    to: "$100+",
+    value: "3x+",
     note: "Per visit after Express Facial + aftercare retail",
   },
   {
@@ -48,15 +47,7 @@ export function Metrics() {
           {metrics.map((m, i) => (
             <FadeIn key={m.label} delay={0.08 * i} className="border-t border-stone-deep/15 pt-6">
               <p className="text-[11px] uppercase tracking-[0.2em] text-muted">{m.label}</p>
-              {"from" in m && m.from ? (
-                <p className="mt-3 font-serif text-3xl text-ink sm:text-4xl">
-                  <span className="text-ash line-through decoration-1">{m.from}</span>
-                  <span className="mx-2 text-muted">&rarr;</span>
-                  <span>{m.to}</span>
-                </p>
-              ) : (
-                <p className="mt-3 font-serif text-4xl text-ink sm:text-5xl">{m.value}</p>
-              )}
+              <p className="mt-3 font-serif text-4xl text-ink sm:text-5xl">{m.value}</p>
               <p className="mt-3 text-sm leading-relaxed text-muted">{m.note}</p>
             </FadeIn>
           ))}

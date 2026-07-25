@@ -1,6 +1,7 @@
 "use client";
 
 import { FadeIn } from "./FadeIn";
+import { Media } from "./Media";
 
 const numbers = [
   { value: "5", label: "Korea Smedia Brand Awards", note: "2025 · Aesthetic cosmetics" },
@@ -29,7 +30,7 @@ export function Trust() {
             Winner of 5 awards. No.1 for 8 consecutive years.
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-ash">
-            A consumer-voted record in Korea&apos;s aesthetic cosmetics category — validated
+            A consumer-voted record in Korea&apos;s aesthetic cosmetics category - validated
             by the Korea Consumer Satisfaction Index every year since 2018.
           </p>
         </FadeIn>
@@ -46,10 +47,12 @@ export function Trust() {
 
         <div className="mt-16 grid items-center gap-10 lg:grid-cols-2">
           <FadeIn>
-            <img
-              src="/images/awards-smedia.png"
+            <Media
+              src="/images/awards-smedia.webp"
               alt="Dermabell winner of 5 Korea Smedia Brand Awards 2025"
-              className="w-full object-cover"
+              width={820}
+              height={495}
+              sizes="(max-width: 1024px) 100vw, 520px"
             />
           </FadeIn>
           <FadeIn delay={0.1}>
@@ -71,10 +74,17 @@ export function Trust() {
         </div>
 
         <FadeIn className="mt-16">
-          <img
-            src="/images/awards-trophies.png"
-            alt="Dermabell customer satisfaction trophies 2018–2024"
-            className="w-full object-cover object-center"
+          <p className="mb-5 text-[11px] uppercase tracking-[0.2em] text-ash">
+            Customer Satisfaction · 2018-2025
+          </p>
+          <Media
+            src="/images/awards-trophies.webp"
+            alt="Dermabell consecutive customer satisfaction trophies"
+            width={820}
+            height={580}
+            sizes="100vw"
+            className="overflow-hidden"
+            imgClassName="object-cover object-center"
           />
         </FadeIn>
       </div>
