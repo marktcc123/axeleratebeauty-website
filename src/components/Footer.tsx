@@ -58,8 +58,11 @@ export function Footer() {
       </div>
 
       <div className="border-t border-sand-200">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <Logo variant="dark" className="h-5 w-auto sm:h-6" />
+        <div className="mx-auto flex max-w-6xl flex-col items-start gap-3 px-5 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <Logo
+            variant="dark"
+            className="h-5 w-auto max-w-[10rem] sm:h-6 sm:max-w-[12rem]"
+          />
           <p>Operated by Axelerate Inc. in the US</p>
           <p>© {new Date().getFullYear()} Axelerate Inc. All rights reserved.</p>
         </div>

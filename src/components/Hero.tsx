@@ -35,7 +35,11 @@ export function Hero() {
           </p>
 
           <h1 className="sr-only">Dermabell.</h1>
-          <Logo variant="dark" className="h-10 w-auto sm:h-14 lg:h-16" priority />
+          <Logo
+            variant="dark"
+            className="h-9 w-auto max-w-[11rem] sm:h-14 sm:max-w-[16rem] lg:h-16 lg:max-w-[18rem]"
+            priority
+          />
 
           <p className="mt-5 font-serif text-2xl leading-snug text-stone-deep text-balance sm:text-3xl lg:text-[2.15rem]">
             Monetize your existing clients with the K-Beauty Express Facial.

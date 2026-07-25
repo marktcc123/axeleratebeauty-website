@@ -17,7 +17,7 @@ export function Logo({ variant = "dark", className = "h-7 w-auto sm:h-8", priori
       alt="Dermabell."
       width={600}
       height={91}
-      className={className}
+      className={`max-w-full shrink-0 object-contain object-left ${className}`}
       decoding="async"
       {...(priority ? { fetchPriority: "high" as const } : {})}
     />

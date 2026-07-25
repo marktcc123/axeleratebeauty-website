@@ -31,8 +31,8 @@ export function Header() {
       }`}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:h-20 sm:px-8">
-        <a href="#top" className="group flex flex-col leading-none">
-          <Logo variant="dark" className="h-6 w-auto sm:h-7" priority />
+        <a href="#top" className="group flex flex-col items-start leading-none">
+          <Logo variant="dark" className="h-6 w-auto max-w-[9.5rem] sm:h-7 sm:max-w-[11rem]" priority />
           <span className="mt-1 text-[10px] uppercase tracking-[0.22em] text-muted">
             by Axelerate
           </span>
