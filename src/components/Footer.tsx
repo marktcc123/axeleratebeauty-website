@@ -15,8 +15,9 @@ export function Footer() {
             Book your Store Evaluation.
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-muted">
-            A 30-minute walkthrough. We measure your space, your foot traffic, and model
-            your unit economics on the spot.
+            Give us 30 minutes — a working session where we walk you through the full
+            program in detail, answer every question, and model your shop&apos;s unit
+            economics with you.
           </p>
         </FadeIn>
 
