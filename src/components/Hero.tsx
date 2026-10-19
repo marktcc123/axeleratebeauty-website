@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { Logo } from "./Logo";
 
 export function Hero() {
@@ -31,59 +32,33 @@ export function Hero() {
           className="max-w-xl"
         >
           <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.28em] text-muted">
-            Exclusive U.S. Operator · Axelerate Inc.
+            Dermabell Professional · U.S. by Axelerate Inc.
           </p>
-
-          <h1 className="sr-only">Dermabell.</h1>
+          <h1 className="sr-only">Elevate Your Beauty Business with Professional Korean Skincare.</h1>
           <Logo
             variant="dark"
             className="h-9 w-auto max-w-[11rem] sm:h-14 sm:max-w-[16rem] lg:h-16 lg:max-w-[18rem]"
             priority
           />
-
           <p className="mt-5 font-serif text-2xl leading-snug text-stone-deep text-balance sm:text-3xl lg:text-[2.15rem]">
-            Monetize your existing clients with the K-Beauty Express Facial.
+            Elevate Your Beauty Business with Professional Korean Skincare.
           </p>
-
           <p className="mt-5 max-w-md text-base leading-relaxed text-muted sm:text-lg">
-            Add a 40-minute premium Korean facial to your beauty store. 3x your
-            ticket, 5x your profit, with zero new fixed costs.
+            Start with a focused professional facial program, or explore a complete salon
+            implementation solution. Dermabell helps beauty businesses expand their services
+            with Korean skincare expertise.
           </p>
-
           <div className="mt-9 flex flex-wrap items-center gap-4">
-            <motion.a
-              href="#contact"
-              whileHover={reduce ? undefined : { y: -2 }}
-              whileTap={reduce ? undefined : { scale: 0.98 }}
-              className="inline-flex items-center bg-charcoal px-7 py-3.5 text-sm font-medium tracking-wide text-cream transition hover:bg-ink"
-            >
-              Book a Store Evaluation
-            </motion.a>
-            <a
-              href="#system"
-              className="text-sm tracking-wide text-stone-deep underline-offset-4 transition hover:underline"
-            >
-              See the system
-            </a>
+            <Link href="/full-salon-system" className="inline-flex bg-charcoal px-7 py-3.5 text-sm font-medium text-cream hover:bg-ink">
+              Explore the Full Salon System
+            </Link>
+            <Link href="/professional-programs" className="text-sm tracking-wide text-stone-deep underline-offset-4 hover:underline">
+              Explore Professional Programs
+            </Link>
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 1 }}
-          className="mt-14 hidden max-w-xl grid-cols-3 gap-6 border-t border-stone-deep/15 pt-6 sm:grid"
-        >
-          {[
-            { label: "Service", value: "40-60 min" },
-            { label: "Protocol", value: "16 steps" },
-            { label: "Launch", value: "4 weeks" },
-          ].map((item) => (
-            <div key={item.label}>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-muted">{item.label}</p>
-              <p className="mt-1 font-serif text-xl text-ink">{item.value}</p>
-            </div>
-          ))}
+          <Link href="/success-stories" className="mt-4 inline-block text-sm text-muted underline-offset-4 hover:underline">
+            Watch a Real U.S. Implementation
+          </Link>
         </motion.div>
       </div>
     </section>

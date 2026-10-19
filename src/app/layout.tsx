@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { SiteChrome } from "@/components/site/SiteChrome";
 import "./globals.css";
 
 const emilio = Cormorant_Garamond({
@@ -16,16 +17,12 @@ const avenir = Manrope({
   display: "swap",
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
-  title: "Dermabell K-Beauty Express Facial | Axelerate Beauty",
+  title: "Dermabell Professional | Korean Skincare for Beauty Businesses",
   description:
-    "Exclusive US operator for Dermabell. Monetize existing salon traffic with a 40-minute Korean Express Facial — 3× ticket, 5× profit, zero new fixed costs.",
-  openGraph: {
-    title: "Dermabell K-Beauty Express Facial Program",
-    description:
-      "Add a premium Korean facial to your beauty store. Book a Store Evaluation with Axelerate Inc.",
-    type: "website",
-  },
+    "Dermabell Professional offers complete salon facial systems and curated professional skincare kits for U.S. beauty businesses. Operated by Axelerate Inc.",
 };
 
 export default function RootLayout({
@@ -35,7 +32,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${emilio.variable} ${avenir.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans text-charcoal">{children}</body>
+      <body className="min-h-full flex flex-col font-sans text-charcoal">
+        <SiteChrome>{children}</SiteChrome>
+      </body>
     </html>
   );
 }

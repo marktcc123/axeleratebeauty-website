@@ -15,6 +15,15 @@
   --accent-sts: #7a8f74;
   --accent-tac: #a67c6d;
   --accent-wbu: #b8896a;
+  --program-hydration: #668da5;
+  --program-hydration-soft: #e9f2f6;
+  --program-clear: #b36550;
+  --program-clear-soft: #f7ebe5;
+  --program-sts: #68866d;
+  --program-sts-soft: #e8f0e8;
+  --program-glow: #b49a55;
+  --program-glow-soft: #f8f1e2;
+  --forest: #173f33;
   --glow: rgba(255, 248, 240, 0.55);
 }
 
