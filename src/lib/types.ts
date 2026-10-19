@@ -50,7 +50,9 @@ export type Product = {
   publicationStatus: PublicationStatus;
   reorderEligible: boolean;
   relatedProductIds: string[];
-  zohoProductId?: string | null;
+  zohoCrmProductId?: string | null;
+  zohoCommerceProductId?: string | null;
+  zohoVariantId?: string | null;
   productKind?: "replenishment" | "program" | "full_system" | "internal_lot";
 };
 

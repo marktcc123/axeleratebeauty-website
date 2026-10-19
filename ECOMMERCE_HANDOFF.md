@@ -2,22 +2,35 @@
 
 Operating entity: **AXELERATE INC.**  
 Brand: **Axelerate Beauty / Dermabell Professional**  
-Review branch: `feature/phase1-security-and-commerce-foundation`
+Review branch: `feature/phase1-security-and-commerce-foundation`  
+Draft PR: https://github.com/marktcc123/axeleratebeauty-website/pull/1
 
 All customer purchases are intended to be collected by Axelerate on the website, then settled internally with AOETO. Customer screens never show commission, supplier cost, or internal ownership. Historical payment recipients are not rewritten.
+
+This increment does **not** deploy production, charge cards, send customer email, merge to main, or run production migrations.
 
 ## Current status
 
 | Area | Status |
 | --- | --- |
-| Phase 1 permission, price isolation, atomic checkout, inquiry persist | Implemented in code; waiting for Supabase migration apply |
+| Phase 1 permission, price isolation, checkout, inquiry persist | Code + temporary-database migration tests passed; staging/production Supabase apply is still pending |
 | Phase 2 Zoho CRM server layer, mapping, retry | Implemented; waiting for Zoho OAuth credentials |
 | Phase 3 HQ/store authorization and partner portal | Implemented against new tables; waiting for migration + real accounts |
-| Phase 4 Zoho Commerce catalog switch | Client + `CATALOG_SOURCE` flag only. One-SKU verification not run |
-| Phase 5 billing, refunds, AOETO settlement drafts | Foundation only. No live Books posting |
+| Phase 4 Zoho Commerce catalog switch | Client + `CATALOG_SOURCE` flag only. Keep `supabase_cache` until one-SKU verification |
+| Phase 5 billing, refunds, AOETO settlement drafts | Semantic fields and refund adjustments implemented. No live Books posting |
 | Phase 6 public UX, a11y, SEO | Partial: homepage paths, noindex, labels, reduced motion |
 
-This increment does **not** deploy production, charge cards, send customer email, or run destructive production migrations.
+## Review-fix notes (this increment)
+
+- Migration order is columns first, then tables, then `catalog_products`, then policies/functions. Existing same-name policies from `schema.sql` are dropped before recreate.
+- Public catalog reads only `catalog_products` columns. Database errors are thrown (`CatalogError`); they are not converted into an empty warehouse.
+- Payment, event, inventory, and refund RPCs revoke `PUBLIC` / `anon` / `authenticated` execute. `protect_profile_privileges` never treats `current_user` as caller authorization.
+- Webhook claim is not completion. Failed or stale claims can be reclaimed. Missing orders fail. Card is the only Checkout payment method; async success/failure events are handled.
+- Refunds dedupe by Stripe refund ID, accumulate succeeded amounts, and mark the order refunded only when the total is covered.
+- Checkout requires Stripe Tax + `STRIPE_SHIPPING_RATE_ID`. Unknown tax/shipping is never treated as $0. Session create uses an idempotency key; unlinkable sessions are expired.
+- Belle and Brow Arc are both Tier 1. Tier 2 = Tier 1 × 1.20; Tier 3 = Tier 2 × 1.20. Location > headquarters > tier. No customer tier or valid price means no purchase.
+- Belle purchase cost and Brow Arc commission base are independent. Belle unit cost = Excel E ÷ 0.6. Brow Arc commission is 15% of a confirmed supplier-price base. Missing base stays `cost_missing`.
+- CRM Product ID, Commerce Product ID, and Variant ID are stored separately.
 
 ## Architecture
 
@@ -46,15 +59,6 @@ This increment does **not** deploy production, charge cards, send customer email
 
 Field owners are also listed in `src/lib/integrations/zoho/mappings.ts`.
 
-## Phase 1 fixes shipped
-
-1. **Profile privileges.** Users can update `full_name` only. Trigger blocks `is_admin`, `role`, and `organization_id` changes except via service role.
-2. **Protected prices.** Public catalog reads `catalog_products` / explicit columns. `professional_price_cents` is not selected for anonymous or unapproved users. `product_offers` has no public SELECT.
-3. **Checkout.** Order items must insert before Stripe session creation. Failed item writes delete the pending order. Amounts are integer cents from authorized offers, not the browser.
-4. **Webhooks.** `claim_processed_event` is unique per Stripe event. `mark_order_paid` updates only when not already paid. Inventory uses `decrement_tracked_inventory`. Processing failures are stored and the event claim is released so Stripe can retry.
-5. **Auth.** New registrations create a **new pending organization**. Existing companies are joined only through an admin invite token matched to email. Confirmation goes to `/auth/callback`. Password reset goes to `/partner/reset`.
-6. **Inquiries.** Success is returned only after the row is saved. Mailto is an optional backup, not completion proof.
-
 ## Database migration
 
 Apply in a staging/project SQL editor, never blindly on production:
@@ -65,7 +69,10 @@ Apply in a staging/project SQL editor, never blindly on production:
 Rollback: `supabase/migrations/20261019_phase1_security_rollback.sql`  
 Rollback restores the older public product policy and drops new tables. It does not delete paid orders. Review before running.
 
-Compatibility: the app still starts without the migration. Location memberships and the catalog view will be empty/unavailable, so purchasing stays locked instead of inventing data.
+Temporary-database verification (not production, not `npm build`):
+
+- `npm test` / `npm run test:db` loads `supabase/test/bootstrap.sql` + `schema.sql` + the Phase 1 migration into PGlite and asserts catalog columns, RPC privileges, claim/complete, refund accumulation, and inventory rules.
+- PGlite does not ship `pgcrypto`. The test skips that one `CREATE EXTENSION` line; `gen_random_uuid()` comes from core Postgres.
 
 ## Environment variables
 
@@ -79,8 +86,9 @@ See `.env.example`. No real secrets belong in git.
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only privileged writes after identity checks |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe.js if used |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Checkout + webhook verify |
-| `STRIPE_AUTOMATIC_TAX` | Enable only after Stripe Tax is configured |
-| `CATALOG_SOURCE` | `supabase_cache` (default) or `zoho_commerce` |
+| `STRIPE_AUTOMATIC_TAX` | Must be `true` before a payable Session can be created |
+| `STRIPE_SHIPPING_RATE_ID` | Required Stripe shipping rate. Unknown shipping is never $0 |
+| `CATALOG_SOURCE` | Keep `supabase_cache` until Commerce verification |
 | `ZOHO_CLIENT_ID` / `ZOHO_CLIENT_SECRET` / `ZOHO_REFRESH_TOKEN` | Server OAuth only |
 | `ZOHO_ACCOUNTS_URL` / `ZOHO_API_DOMAIN` | Data-center accounts host and fallback API host. Runtime uses `api_domain` from token refresh |
 | `ZOHO_COMMERCE_ORG_ID` / `ZOHO_COMMERCE_API_DOMAIN` | Commerce admin API, not the public storefront |
@@ -95,8 +103,8 @@ See `.env.example`. No real secrets belong in git.
 4. Store a refresh token in `ZOHO_REFRESH_TOKEN`.
 5. Known HQ IDs are **candidates only**. An admin must open `/admin`, enter the exact ID, and let the server read the Account before binding:
 
-- Brow Arc: `7644545000000710001` (commission)
-- Belle Brows & Beauty: `7644545000000710002` (wholesale)
+- Brow Arc: `7644545000000710001` (commission, price tier 1)
+- Belle Brows & Beauty: `7644545000000710002` (wholesale, price tier 1)
 - AOETO USA INC.: `7644545000000710003` (internal, not a website buyer)
 
 Flora is not a sales customer and is not seeded.
@@ -106,19 +114,21 @@ Flora is not a sales customer and is not seeded.
 Official admin product API: `GET https://commerce.zoho.com/store/api/v1/products` with `X-com-zoho-store-organizationid`.  
 The public storefront API is **not** used for customer or supplier prices. `purchase_rate` must stay server-side.
 
-Do not set `CATALOG_SOURCE=zoho_commerce` until one real SKU is read, priced, and ordered in a sandbox. Until then the local catalog is a transitional cache.
+Do not set `CATALOG_SOURCE=zoho_commerce` until one real SKU is read, priced, and ordered in a sandbox.
 
 ### Stripe
 
 1. Sandbox first.
-2. Webhooks: `checkout.session.completed`, plus refund events (`charge.refunded` / `refund.created`).
+2. Webhooks: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `refund.created`, `refund.updated`, `refund.failed`, `charge.refunded`.
 3. Endpoint: `/api/webhooks/stripe`.
-4. Collect U.S. shipping. Do not advertise free shipping or tax.
+4. Checkout payment methods: `card` only. Async card-adjacent events are processed; other methods are not enabled.
+5. Enable Stripe Tax and create a shipping rate before opening checkout.
 
 ## Commercial rules encoded in code
 
-- **Brow Arc (commission):** 15% of supplier-price sales, including replenishment. Missing supplier cost → `cost_missing`. Never use $0 or the customer selling price as the base. Tax, shipping, fees, and refunds are separate. No automatic AOETO due date.
-- **Belle Brows / Axelerate direct (wholesale):** store sale, purchase cost, fees, and payable separately. Missing cost is not profit.
+- **Brow Arc (commission):** 15% of confirmed supplier-price sales. Missing `commission_base_cents` → `cost_missing`. Never use Belle purchase cost, $0, or the customer selling price. Tax, shipping, fees, and refunds are separate. No automatic AOETO due date.
+- **Belle Brows / Axelerate direct (wholesale):** store sale and `purchase_cost_cents` (Excel E ÷ 0.6) stay independent from Brow Arc. Missing cost is not profit.
+- Refund adjustments are new settlement rows; they do not rewrite the original sale.
 - One website order = one store. HQ users may switch authorized stores.
 - Laredo $10,500 / 3×$3,500 stays a contract. Estimated dates do not complete training or trigger collection. The $3,000 bonus is not receivable until verified.
 - Five AOETO ocean lots are inbound supply, not five customer orders and not sellable SKUs.
@@ -137,31 +147,37 @@ Homepage now has two paths: Full Salon System consultation and professional logi
 
 ## Launch checklist before real charges
 
-1. Apply the Phase 1 migration on the intended Supabase project.
+1. Apply the Phase 1 migration on the intended Supabase project. Do not treat `npm build` as migration proof.
 2. Confirm email auth, `/auth/callback`, and reset email templates.
-3. Create the first platform admin in SQL (`profiles.is_admin = true`). Never allow self-promotion.
-4. Map verified Zoho Accounts. Invite existing chain staff; do not let them type into Brow Arc / Belle Brows.
-5. Publish only approved SKUs, linked by SKU / Zoho Product ID.
-6. Finish shipping, tax, resale-certificate, and legal policy review.
+3. Create the first platform admin with `app.allow_privilege_write=on` or a service-role write. Never allow self-promotion.
+4. Map verified Zoho Accounts and set the customer price tier. Invite existing chain staff; do not let them type into Brow Arc / Belle Brows.
+5. Publish only approved SKUs, with CRM / Commerce / variant IDs stored separately.
+6. Set `STRIPE_AUTOMATIC_TAX=true` and `STRIPE_SHIPPING_RATE_ID` after tax and shipping review.
 7. Use Stripe sandbox, then one internal live test.
 8. Keep `CATALOG_SOURCE=supabase_cache` until Commerce verification succeeds.
 9. Do not enable Books dual-posting while website settlement records exist.
 
-## Verification
+## 实际通过
 
-- `npm test`: 24 passed (commerce guards, public price strip, settlement drafts, Zoho-not-configured).
-- `npm run lint`: passed.
-- `npm run build`: passed (Next.js 16.2.11).
-- Browser on localhost with `DEV_PREVIEW_AUTH`: homepage dual CTAs, Full Salon System remains consultative, cart shows store selector and empty state, partner dashboard/catalog/billing render without fake products or fake paid orders, register copy states that a typed company name does not join an existing group, privacy policy stays a draft, inquiry submit does not claim success when validation fails.
-- Live Stripe checkout was not executed.
-- Zoho CRM/Commerce live calls were not executed. Missing credentials correctly throw `not_configured` instead of a fake success.
+- `npm test`: 42 passed, including:
+  - PGlite execution of `schema.sql` + `20261019_phase1_security.sql`
+  - Anonymous `catalog_products` visibility for a real-structure test product (`TEST-BELLE-01`) without `professional_price_cents` / `available_quantity`
+  - Privilege trigger does not honor `current_user`; explicit `app.allow_privilege_write` is required
+  - Webhook claim ≠ complete; concurrent `in_progress`; reclaim after fail; missing order is not success
+  - Inventory rejects non-positive qty; refunds accumulate; full refund only when `refunded_cents >= total_cents`
+  - RPC execute revoked from `anon` / `PUBLIC`
+  - Tier math, settlement field isolation, Excel E ÷ 0.6, checkout readiness
+- `npm run test:db` is the same PGlite suite.
+- `npm run lint` and `npm run build` are compiled separately; they do **not** replace the migration test.
 
-Intentionally **not** claimed as passing:
+## 尚未验证
 
-- Live Stripe payment or refund
-- Live Zoho CRM lead create
-- Zoho Commerce SKU read, customer price book, or order
+- Live Stripe sandbox charge, refund, or webhook delivery
+- Hosted Supabase / production RLS against a real project
 - Concurrent inventory under production load
+- Zoho CRM live Account read or Lead create
+- Zoho Commerce SKU read, customer price book, or order
 - Email deliverability and confirmation-mail templates
-- Production RLS against a live project
-- Books posting or AOETO payout calculation with real costs
+- Books posting or AOETO payout with verified real costs
+- Browser checkout with tax + shipping rate configured
+- Production apply of `schema.sql` + this migration

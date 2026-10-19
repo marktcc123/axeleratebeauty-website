@@ -67,4 +67,8 @@ describe("commerce guards", () => {
       CommerceError,
     );
   });
+
+  it("blocks purchase when no authorized price exists", () => {
+    expect(() => assertPurchasableProduct({ ...product, professionalPriceCents: null })).toThrow(CommerceError);
+  });
 });

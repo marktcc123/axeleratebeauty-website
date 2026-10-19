@@ -1,3 +1,4 @@
+import { CATALOG_PUBLIC_SELECT } from "@/lib/catalog-columns";
 import { catalogSource, isZohoCommerceConfigured } from "@/lib/config";
 import { getAuthorizedOffers } from "@/lib/pricing";
 import { getSession } from "@/lib/session";
@@ -5,8 +6,12 @@ import { createServerSupabase, createServiceSupabase } from "@/lib/supabase/serv
 import type { Product, PublicationStatus, SessionContext } from "@/lib/types";
 import { canPurchase } from "@/lib/types";
 
-const PUBLIC_COLUMNS =
-  "id, sku, slug, name, description, intended_use, category, highlights, contents, usage_notes, precautions, images, currency, inventory_status, shipping_attributes, publication_status, reorder_eligible, related_product_ids, zoho_product_id, product_kind";
+export class CatalogError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = "CatalogError";
+  }
+}
 
 type PublicProductRow = {
   id: string;
@@ -27,7 +32,9 @@ type PublicProductRow = {
   publication_status: PublicationStatus;
   reorder_eligible: boolean;
   related_product_ids: string[] | null;
-  zoho_product_id?: string | null;
+  zoho_crm_product_id?: string | null;
+  zoho_commerce_product_id?: string | null;
+  zoho_variant_id?: string | null;
   product_kind?: Product["productKind"];
 };
 
@@ -54,7 +61,9 @@ function mapPublicProduct(row: PublicProductRow): Product {
     publicationStatus: row.publication_status,
     reorderEligible: row.reorder_eligible,
     relatedProductIds: row.related_product_ids ?? [],
-    zohoProductId: row.zoho_product_id ?? null,
+    zohoCrmProductId: row.zoho_crm_product_id ?? null,
+    zohoCommerceProductId: row.zoho_commerce_product_id ?? null,
+    zohoVariantId: row.zoho_variant_id ?? null,
     productKind: row.product_kind ?? "replenishment",
   };
 }
@@ -63,25 +72,16 @@ async function readPublicRows(ids?: string[], slug?: string) {
   const supabase = await createServerSupabase();
   if (!supabase) return [];
 
-  const fromView = supabase.from("catalog_products").select(PUBLIC_COLUMNS);
-  const query = ids
-    ? fromView.in("id", ids)
-    : slug
-      ? fromView.eq("slug", slug)
-      : fromView.eq("publication_status", "active").order("name");
+  let query = supabase.from("catalog_products").select(CATALOG_PUBLIC_SELECT);
+  if (ids) query = query.in("id", ids);
+  else if (slug) query = query.eq("slug", slug);
+  else query = query.order("name");
 
   const { data, error } = await query;
-  if (!error && data) return data as PublicProductRow[];
-
-  const fallback = supabase.from("products").select(PUBLIC_COLUMNS);
-  const retry = ids
-    ? fallback.in("id", ids)
-    : slug
-      ? fallback.eq("slug", slug).eq("publication_status", "active")
-      : fallback.eq("publication_status", "active").order("name");
-  const second = await retry;
-  if (second.error || !second.data) return [];
-  return second.data as PublicProductRow[];
+  if (error) {
+    throw new CatalogError(`Catalog query failed: ${error.message}`, error);
+  }
+  return ((data ?? []) as unknown) as PublicProductRow[];
 }
 
 export function stripProtectedPrice(product: Product): Product {
@@ -159,7 +159,7 @@ export async function listAllProductsForAdmin() {
   const supabase = await createServiceSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-  if (error || !data) return [];
+  if (error) throw new CatalogError(`Admin catalog query failed: ${error.message}`, error);
   return (data as Array<PublicProductRow & { professional_price_cents?: number | null; available_quantity?: number | null }>).map(
     (row) => ({
       ...mapPublicProduct(row),

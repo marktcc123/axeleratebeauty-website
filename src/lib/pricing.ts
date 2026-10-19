@@ -1,4 +1,4 @@
-import { catalogSource } from "@/lib/config";
+import { resolveAuthorizedPrice, type OfferRow, type PriceTier } from "@/lib/commerce/tier-pricing";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import type { InventoryStatus } from "@/lib/types";
 
@@ -8,7 +8,7 @@ export type AuthorizedOffer = {
   currency: string;
   availableQuantity: number | null;
   inventoryStatus?: InventoryStatus;
-  source: "product_offer" | "supabase_cache";
+  source: "location" | "organization" | "tier" | "tier_formula";
 };
 
 export async function getAuthorizedOffers(organizationId: string, locationId: string, productIds: string[]) {
@@ -18,51 +18,57 @@ export async function getAuthorizedOffers(organizationId: string, locationId: st
   const service = await createServiceSupabase();
   if (!service) return offers;
 
-  const now = new Date().toISOString();
-  const { data: assigned } = await service
+  const { data: organization, error: orgError } = await service
+    .from("organizations")
+    .select("price_tier")
+    .eq("id", organizationId)
+    .maybeSingle();
+  if (orgError) throw new Error(`Price-tier lookup failed: ${orgError.message}`);
+  const priceTier = ([1, 2, 3] as const).includes(organization?.price_tier)
+    ? (organization?.price_tier as PriceTier)
+    : null;
+  if (!priceTier) return offers;
+
+  const { data: rows, error } = await service
     .from("product_offers")
-    .select("product_id, price_cents, currency, location_id, organization_id, effective_to")
-    .in("product_id", productIds)
-    .or(`organization_id.eq.${organizationId},organization_id.is.null`)
-    .or(`location_id.eq.${locationId},location_id.is.null`)
-    .or(`effective_to.is.null,effective_to.gt.${now}`);
+    .select("product_id, price_cents, currency, location_id, organization_id, price_tier, effective_from, effective_to")
+    .in("product_id", productIds);
+  if (error) throw new Error(`Offer lookup failed: ${error.message}`);
 
-  for (const row of assigned ?? []) {
-    const existing = offers.get(row.product_id);
-    const specificity = (row.location_id ? 2 : 0) + (row.organization_id ? 1 : 0);
-    const current = existing ? (existing.source === "product_offer" ? 1 : 0) : -1;
-    if (!existing || specificity >= current) {
-      offers.set(row.product_id, {
-        productId: row.product_id,
-        priceCents: row.price_cents,
-        currency: row.currency,
-        availableQuantity: null,
-        source: "product_offer",
-      });
-    }
-  }
+  const mapped: OfferRow[] = (rows ?? []).map((row) => ({
+    productId: row.product_id,
+    priceCents: row.price_cents,
+    currency: row.currency,
+    organizationId: row.organization_id,
+    locationId: row.location_id,
+    priceTier: row.price_tier,
+    effectiveFrom: row.effective_from,
+    effectiveTo: row.effective_to,
+  }));
 
-  if (catalogSource() === "zoho_commerce") {
-    return offers;
-  }
-
-  const missing = productIds.filter((id) => !offers.has(id));
-  if (missing.length === 0) return offers;
-
-  const { data: cached } = await service
+  const { data: products, error: productError } = await service
     .from("products")
-    .select("id, professional_price_cents, currency, available_quantity, inventory_status, publication_status")
-    .in("id", missing);
+    .select("id, available_quantity, inventory_status")
+    .in("id", productIds);
+  if (productError) throw new Error(`Stock lookup failed: ${productError.message}`);
+  const stock = new Map((products ?? []).map((row) => [row.id, row]));
 
-  for (const row of cached ?? []) {
-    if (row.professional_price_cents == null) continue;
-    offers.set(row.id, {
-      productId: row.id,
-      priceCents: row.professional_price_cents,
-      currency: row.currency,
-      availableQuantity: row.available_quantity ?? null,
-      inventoryStatus: row.inventory_status,
-      source: "supabase_cache",
+  for (const productId of productIds) {
+    const resolved = resolveAuthorizedPrice(mapped, {
+      productId,
+      organizationId,
+      locationId,
+      priceTier,
+    });
+    if (!resolved) continue;
+    const product = stock.get(productId);
+    offers.set(productId, {
+      productId,
+      priceCents: resolved.priceCents,
+      currency: resolved.currency,
+      availableQuantity: product?.available_quantity ?? null,
+      inventoryStatus: product?.inventory_status,
+      source: resolved.source,
     });
   }
 

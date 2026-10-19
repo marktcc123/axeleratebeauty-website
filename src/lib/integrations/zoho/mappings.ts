@@ -3,12 +3,14 @@ export const KNOWN_ZOHO_ACCOUNT_CANDIDATES = [
     label: "Brow Arc",
     zohoAccountId: "7644545000000710001",
     commercialModel: "commission" as const,
-    note: "Commission sales. Verify the live Zoho Account before binding website permissions.",
+    priceTier: 1 as const,
+    note: "Commission sales. Verify the live Zoho Account before binding website permissions. Price tier 1.",
   },
   {
     label: "Belle Brows & Beauty",
     zohoAccountId: "7644545000000710002",
     commercialModel: "wholesale" as const,
+    priceTier: 1 as const,
     note: "Wholesale resale. Verify the live Zoho Account before binding website permissions.",
   },
   {

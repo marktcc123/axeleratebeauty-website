@@ -23,6 +23,14 @@ export function stripeAutomaticTax() {
   return process.env.STRIPE_AUTOMATIC_TAX === "true";
 }
 
+export function stripeShippingRateId() {
+  return process.env.STRIPE_SHIPPING_RATE_ID || null;
+}
+
+export function isStripeCheckoutReady() {
+  return isStripeConfigured() && stripeAutomaticTax() && Boolean(stripeShippingRateId());
+}
+
 export function catalogSource(): CatalogSource {
   return process.env.CATALOG_SOURCE === "zoho_commerce" ? "zoho_commerce" : "supabase_cache";
 }

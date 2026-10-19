@@ -6,7 +6,7 @@ import { PageIntro } from "@/components/site/PageIntro";
 import { readCart } from "@/lib/cart-cookie";
 import { getAuthorizedProductsByIds } from "@/lib/catalog";
 import { formatMoney, formatPendingMoney } from "@/lib/commerce/guards";
-import { isStripeConfigured } from "@/lib/config";
+import { isStripeCheckoutReady } from "@/lib/config";
 import { getSession } from "@/lib/session";
 import { canPurchase } from "@/lib/types";
 
@@ -85,8 +85,8 @@ export default async function CartPage() {
             {outOfStock && <p className="text-sm text-muted">Remove unavailable items before checkout.</p>}
             {!canPurchase(session) ? (
               <Link href="/partner/login" className="inline-block bg-charcoal px-6 py-3 text-sm text-cream">Sign in with an approved account</Link>
-            ) : !isStripeConfigured() ? (
-              <p className="text-sm text-muted">Checkout is prepared, but live or sandbox Stripe credentials are not connected. No payment will be collected.</p>
+            ) : !isStripeCheckoutReady() ? (
+              <p className="text-sm text-muted">Checkout stays locked until Stripe tax and a shipping rate are configured. Unknown shipping or tax is never treated as free.</p>
             ) : missingPrice || outOfStock ? (
               <p className="text-sm text-muted">Payment cannot start until prices and availability are confirmed.</p>
             ) : (

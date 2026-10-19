@@ -22,6 +22,12 @@ export function AdminZohoMapForm() {
         <option value="wholesale">Wholesale</option>
         <option value="internal">Internal</option>
       </select>
+      <select name="priceTier" className="border border-sand-200 px-3 py-2">
+        <option value="">Price tier unset</option>
+        <option value="1">Tier 1</option>
+        <option value="2">Tier 2</option>
+        <option value="3">Tier 3</option>
+      </select>
       <button className="bg-charcoal px-4 py-2 text-sm text-cream">Verify and map Zoho Account</button>
       {message && <p className="text-sm text-muted md:col-span-2">{message}</p>}
     </form>

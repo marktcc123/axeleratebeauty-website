@@ -36,8 +36,11 @@ export async function mapZohoAccount(formData: FormData) {
   const organizationId = String(formData.get("organizationId") ?? "").trim();
   const zohoAccountId = String(formData.get("zohoAccountId") ?? "").trim();
   const commercialModel = String(formData.get("commercialModel") ?? "").trim();
+  const priceTierRaw = String(formData.get("priceTier") ?? "").trim();
+  const priceTier = priceTierRaw ? Number(priceTierRaw) : null;
   if (!organizationId || !zohoAccountId) return { error: "Organization and exact Zoho Account ID are required." };
   if (!/^\d+$/.test(zohoAccountId)) return { error: "Use the exact Zoho Account ID. Do not bind by company name." };
+  if (priceTier != null && ![1, 2, 3].includes(priceTier)) return { error: "Price tier must be 1, 2, or 3." };
 
   try {
     const account = await getZohoAccount(zohoAccountId);
@@ -47,6 +50,7 @@ export async function mapZohoAccount(formData: FormData) {
         zoho_account_id: zohoAccountId,
         zoho_sync_status: "mapped",
         commercial_model: commercialModel || null,
+        price_tier: priceTier,
         updated_at: new Date().toISOString(),
       })
       .eq("id", organizationId);
@@ -89,7 +93,9 @@ export async function upsertProduct(formData: FormData) {
     inventory_status: String(formData.get("inventoryStatus") ?? "untracked"),
     available_quantity: formData.get("availableQuantity") ? Number(formData.get("availableQuantity")) : null,
     publication_status: String(formData.get("publicationStatus") ?? "draft"),
-    zoho_product_id: String(formData.get("zohoProductId") ?? "").trim() || null,
+    zoho_crm_product_id: String(formData.get("zohoCrmProductId") ?? "").trim() || null,
+    zoho_commerce_product_id: String(formData.get("zohoCommerceProductId") ?? "").trim() || null,
+    zoho_variant_id: String(formData.get("zohoVariantId") ?? "").trim() || null,
     product_kind: String(formData.get("productKind") ?? "replenishment"),
     usage_notes: String(formData.get("usageNotes") ?? "").trim() || null,
     precautions: String(formData.get("precautions") ?? "").trim() || null,
@@ -113,8 +119,8 @@ export async function upsertProduct(formData: FormData) {
   if (payload.product_kind === "internal_lot") {
     return { error: "In-transit supplier lots are not sellable products." };
   }
-  if (payload.publication_status === "active" && payload.professional_price_cents == null && !payload.zoho_product_id) {
-    return { error: "An approved cache price or Zoho Product ID is required before a product can be published." };
+  if (payload.publication_status === "active" && !payload.zoho_commerce_product_id && payload.professional_price_cents == null) {
+    return { error: "Publish only after a Commerce product ID or an approved tier-1 cache price exists. Do not invent a price." };
   }
 
   if (id) {

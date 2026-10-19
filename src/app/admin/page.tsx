@@ -104,14 +104,17 @@ export default async function AdminPage() {
 
         <div>
           <h2 className="font-serif text-3xl text-ink">Create or update a product</h2>
-          <p className="mt-2 text-sm text-muted">Products stay Draft until you set an approved cache price or Zoho Product ID and mark them Active. Public pages never show professional prices.</p>
+          <p className="mt-2 text-sm text-muted">Keep CRM, Commerce, and variant IDs separate. The cache price is Tier 1 only and never appears on public pages. Publish only after a Commerce product ID or an approved Tier 1 cache price exists.</p>
           <form action={upsertProductForm} className="mt-6 grid gap-3 md:grid-cols-2">
             <input name="sku" placeholder="SKU" className="border border-sand-200 px-3 py-2" required />
             <input name="slug" placeholder="slug" className="border border-sand-200 px-3 py-2" required />
             <input name="name" placeholder="Official name" className="border border-sand-200 px-3 py-2 md:col-span-2" required />
             <textarea name="description" placeholder="Description" className="border border-sand-200 px-3 py-2 md:col-span-2" />
             <textarea name="intendedUse" placeholder="Professional intended use" className="border border-sand-200 px-3 py-2 md:col-span-2" />
-            <input name="priceCents" type="number" placeholder="Price in cents" className="border border-sand-200 px-3 py-2" />
+            <input name="priceCents" type="number" placeholder="Tier 1 cache price in cents" className="border border-sand-200 px-3 py-2" />
+            <input name="zohoCrmProductId" placeholder="Zoho CRM Product ID" className="border border-sand-200 px-3 py-2" />
+            <input name="zohoCommerceProductId" placeholder="Zoho Commerce Product ID" className="border border-sand-200 px-3 py-2" />
+            <input name="zohoVariantId" placeholder="Zoho Variant ID" className="border border-sand-200 px-3 py-2" />
             <select name="publicationStatus" defaultValue="draft" className="border border-sand-200 px-3 py-2">
               <option value="draft">Draft</option>
               <option value="active">Active</option>
