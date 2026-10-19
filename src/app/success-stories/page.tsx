@@ -3,7 +3,7 @@ import { Trust } from "@/components/Trust";
 import { PageIntro } from "@/components/site/PageIntro";
 
 export const metadata: Metadata = {
-  title: "Real Partners | Dermabell Professional",
+  title: "Real Partners",
   description: "Documented U.S. Dermabell partner implementation and brand materials for professional beauty businesses.",
   alternates: { canonical: "/success-stories" },
 };

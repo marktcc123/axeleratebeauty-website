@@ -6,7 +6,7 @@ import { PageIntro } from "@/components/site/PageIntro";
 import { PROFESSIONAL_PRICING_MESSAGE, listPublishedPrograms } from "@/lib/program-catalog";
 
 export const metadata: Metadata = {
-  title: "Professional Korean Facial Programs | Dermabell Professional",
+  title: "Professional Korean Facial Programs",
   description:
     "Explore four focused Korean facial programs for professional beauty businesses, with curated backbar products and structured service concepts.",
   alternates: { canonical: "/professional-programs" },

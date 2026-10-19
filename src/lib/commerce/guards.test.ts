@@ -35,7 +35,11 @@ const product: Product = {
 
 describe("commerce guards", () => {
   it("blocks unapproved buyers", () => {
-    expect(() => assertApprovedBuyer({ userId: "u1", verificationStatus: "pending" })).toThrow(CommerceError);
+    expect(() => assertApprovedBuyer({ userId: "u1", verificationStatus: "pending", activeLocationId: "loc1" })).toThrow(CommerceError);
+  });
+
+  it("blocks checkout without an authorized store", () => {
+    expect(() => assertApprovedBuyer({ userId: "u1", verificationStatus: "approved" })).toThrow(CommerceError);
   });
 
   it("blocks draft products", () => {
@@ -45,7 +49,9 @@ describe("commerce guards", () => {
   it("rejects client-side price substitution by using catalog prices", () => {
     const lines = pricedCart([{ productId: "p1", quantity: 2 }], [product]);
     expect(lines[0].unitPriceCents).toBe(75000);
-    expect(cartTotals(lines).totalCents).toBe(150000);
+    expect(cartTotals(lines).merchandiseCents).toBe(150000);
+    expect(cartTotals(lines).totalCents).toBeNull();
+    expect(cartTotals(lines).shippingPending).toBe(true);
   });
 
   it("rejects invalid quantities", () => {
@@ -53,7 +59,7 @@ describe("commerce guards", () => {
   });
 
   it("blocks suspended buyers", () => {
-    expect(() => assertApprovedBuyer({ userId: "u1", verificationStatus: "suspended" })).toThrow(CommerceError);
+    expect(() => assertApprovedBuyer({ userId: "u1", verificationStatus: "suspended", activeLocationId: "loc1" })).toThrow(CommerceError);
   });
 
   it("blocks unpublished products in priced carts", () => {

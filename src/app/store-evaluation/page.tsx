@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { InquiryForm } from "@/components/forms/InquiryForm";
 import { PageIntro } from "@/components/site/PageIntro";
 import { getSession } from "@/lib/session";
+
+export const metadata: Metadata = {
+  title: "Store Evaluation",
+  description: "Request a working consultation for the Dermabell Full Salon System. This is a guided B2B evaluation, not an online checkout.",
+  alternates: { canonical: "/store-evaluation" },
+};
 
 export default async function StoreEvaluationPage() {
   const session = await getSession();

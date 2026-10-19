@@ -12,8 +12,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/for-professionals",
     "/contact",
     "/store-evaluation",
-    "/partner/login",
-    "/partner/register",
   ];
 
   return [

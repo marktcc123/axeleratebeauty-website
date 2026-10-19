@@ -2,9 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { readCart } from "@/lib/cart-cookie";
-import { getProductsByIds } from "@/lib/catalog";
-import { CommerceError, assertApprovedBuyer, pricedCart } from "@/lib/commerce/guards";
-import { isStripeConfigured, siteUrl, stripeAutomaticTax } from "@/lib/config";
+import { getAuthorizedProductsByIds } from "@/lib/catalog";
+import { CommerceError, assertApprovedBuyer, cartTotals, pricedCart } from "@/lib/commerce/guards";
+import { catalogSource, isStripeConfigured, siteUrl, stripeAutomaticTax } from "@/lib/config";
 import { getSession } from "@/lib/session";
 import { getStripe } from "@/lib/stripe";
 import { createServiceSupabase } from "@/lib/supabase/server";
@@ -29,7 +29,10 @@ export async function startCheckout() {
   }
 
   const cart = await readCart();
-  const products = await getProductsByIds(cart.items.map((item) => item.productId));
+  const products = await getAuthorizedProductsByIds(
+    cart.items.map((item) => item.productId),
+    session,
+  );
   let lines;
   try {
     lines = pricedCart(cart.items, products);
@@ -39,28 +42,51 @@ export async function startCheckout() {
 
   const stripe = getStripe();
   const service = await createServiceSupabase();
-  if (!stripe || !service || !session.organizationId || !session.userId) {
+  if (!stripe || !service || !session.organizationId || !session.userId || !session.activeLocationId) {
     return { error: "Checkout is not fully configured." };
   }
 
-  const totals = {
-    subtotalCents: lines.reduce((sum, line) => sum + line.lineTotalCents, 0),
-  };
+  const { data: location } = await service
+    .from("locations")
+    .select("id, name, address_line1, address_line2, city, state, postal_code, country")
+    .eq("id", session.activeLocationId)
+    .eq("organization_id", session.organizationId)
+    .maybeSingle();
 
+  if (!location) {
+    return { error: "Select an authorized store before checkout." };
+  }
+
+  const totals = cartTotals(lines);
   const { data: order, error: orderError } = await service
     .from("orders")
     .insert({
       order_number: orderNumber(),
       organization_id: session.organizationId,
+      payer_organization_id: session.organizationId,
+      location_id: location.id,
       user_id: session.userId,
       status: "pending_payment",
       payment_status: "pending",
       fulfillment_status: "unfulfilled",
+      order_kind: "replenishment",
       subtotal_cents: totals.subtotalCents,
       shipping_cents: 0,
       tax_cents: 0,
+      shipping_pending: true,
+      tax_pending: true,
       total_cents: totals.subtotalCents,
       currency: "USD",
+      catalog_source: catalogSource(),
+      shipping_address: {
+        name: location.name,
+        address_line1: location.address_line1,
+        address_line2: location.address_line2,
+        city: location.city,
+        state: location.state,
+        postal_code: location.postal_code,
+        country: location.country,
+      },
     })
     .select("id, order_number")
     .single();
@@ -69,7 +95,7 @@ export async function startCheckout() {
     return { error: "The order could not be created." };
   }
 
-  await service.from("order_items").insert(
+  const { error: itemError } = await service.from("order_items").insert(
     lines.map((line) => ({
       order_id: order.id,
       product_id: line.product.id,
@@ -80,38 +106,55 @@ export async function startCheckout() {
     })),
   );
 
-  const checkout = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer_email: session.email ?? undefined,
-    client_reference_id: order.id,
-    success_url: `${siteUrl()}/checkout/success?order=${order.order_number}`,
-    cancel_url: `${siteUrl()}/checkout/cancel`,
-    automatic_tax: stripeAutomaticTax() ? { enabled: true } : undefined,
-    shipping_address_collection: { allowed_countries: ["US"] },
-    line_items: lines.map((line) => ({
-      quantity: line.quantity,
-      price_data: {
-        currency: line.product.currency.toLowerCase(),
-        unit_amount: line.unitPriceCents,
-        product_data: {
-          name: line.product.name,
-          metadata: { sku: line.product.sku, product_id: line.product.id },
-        },
-      },
-    })),
-    metadata: {
-      order_id: order.id,
-      organization_id: session.organizationId,
-    },
-  });
+  if (itemError) {
+    await service.from("orders").delete().eq("id", order.id).eq("payment_status", "pending");
+    return { error: "Order items could not be saved, so payment was not started." };
+  }
 
-  await service
+  let checkout;
+  try {
+    checkout = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer_email: session.email ?? undefined,
+      client_reference_id: order.id,
+      success_url: `${siteUrl()}/checkout/success?order=${order.order_number}`,
+      cancel_url: `${siteUrl()}/checkout/cancel`,
+      automatic_tax: stripeAutomaticTax() ? { enabled: true } : undefined,
+      shipping_address_collection: { allowed_countries: ["US"] },
+      line_items: lines.map((line) => ({
+        quantity: line.quantity,
+        price_data: {
+          currency: line.product.currency.toLowerCase(),
+          unit_amount: line.unitPriceCents,
+          product_data: {
+            name: line.product.name,
+            metadata: { sku: line.product.sku, product_id: line.product.id },
+          },
+        },
+      })),
+      metadata: {
+        order_id: order.id,
+        organization_id: session.organizationId,
+        location_id: location.id,
+        order_kind: "replenishment",
+      },
+    });
+  } catch {
+    await service.from("orders").update({ status: "cancelled", payment_status: "failed" }).eq("id", order.id);
+    return { error: "Payment could not be started. The order was not charged." };
+  }
+
+  if (!checkout.url) {
+    await service.from("orders").update({ status: "cancelled", payment_status: "failed" }).eq("id", order.id);
+    return { error: "Stripe did not return a checkout URL." };
+  }
+
+  const { error: linkError } = await service
     .from("orders")
     .update({ stripe_checkout_session_id: checkout.id })
     .eq("id", order.id);
-
-  if (!checkout.url) {
-    return { error: "Stripe did not return a checkout URL." };
+  if (linkError) {
+    return { error: "The payment session could not be linked to the order. No charge was completed." };
   }
 
   redirect(checkout.url);

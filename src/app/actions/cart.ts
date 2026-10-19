@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { readCart, upsertItem, writeCart } from "@/lib/cart-cookie";
-import { getProductsByIds, getPublishedProduct } from "@/lib/catalog";
+import { getAuthorizedProductsByIds, getPublishedProduct } from "@/lib/catalog";
 import { CommerceError, normalizeQuantity } from "@/lib/commerce/guards";
 import { getSession } from "@/lib/session";
 import { canPurchase } from "@/lib/types";
@@ -10,14 +10,14 @@ import { canPurchase } from "@/lib/types";
 export async function addToCart(productId: string, quantity = 1) {
   const session = await getSession();
   if (!canPurchase(session)) {
-    return { error: "Create and verify a professional account before purchasing.", redirectTo: "/partner/register" };
+    return { error: "Create and verify a professional account, then select a store before purchasing.", redirectTo: "/partner/register" };
   }
 
   try {
-    const products = await getProductsByIds([productId]);
+    const products = await getAuthorizedProductsByIds([productId], session);
     const product = products[0];
-    if (!product || product.publicationStatus !== "active") {
-      return { error: "This product is not available." };
+    if (!product || product.publicationStatus !== "active" || product.professionalPriceCents == null) {
+      return { error: "This product is not available for the selected store." };
     }
     const cart = await readCart();
     const nextQty = normalizeQuantity((cart.items.find((item) => item.productId === productId)?.quantity ?? 0) + quantity);

@@ -33,8 +33,10 @@ export function ProductCard({ product, session }: { product: Product; session: S
           <Link href={`/professional-programs/${product.slug}`} className="text-sm underline-offset-4 hover:underline">
             View Details
           </Link>
-          {approved ? (
+          {approved && product.professionalPriceCents != null ? (
             <AddToCartButton productId={product.id} />
+          ) : approved ? (
+            <span className="text-sm text-muted">Price pending for this store</span>
           ) : (
             <Link href="/partner/register" className="text-sm text-muted">
               Register to purchase

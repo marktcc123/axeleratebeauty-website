@@ -62,7 +62,14 @@ export function SiteHeader({
           </Link>
         </div>
 
-        <button type="button" className="lg:hidden" aria-label="Open menu" onClick={() => setOpen((v) => !v)}>
+        <button
+          type="button"
+          className="lg:hidden"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          aria-controls="mobile-navigation"
+          onClick={() => setOpen((v) => !v)}
+        >
           <div className="flex w-5 flex-col gap-1.5">
             <span className="h-px bg-charcoal" />
             <span className="h-px bg-charcoal" />
@@ -74,7 +81,7 @@ export function SiteHeader({
       <AnimatePresence>
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-b border-sand-200 bg-cream lg:hidden">
-            <div className="flex flex-col px-5 py-4">
+            <div id="mobile-navigation" className="flex flex-col px-5 py-4">
               {links.map((link) => (
                 <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="py-3 text-stone-deep">
                   {link.label}

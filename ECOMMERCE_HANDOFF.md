@@ -1,127 +1,167 @@
 # Dermabell Professional — Commerce Handoff
 
-## Technical audit (current repository)
+Operating entity: **AXELERATE INC.**  
+Brand: **Axelerate Beauty / Dermabell Professional**  
+Review branch: `feature/phase1-security-and-commerce-foundation`
 
-The existing site was a Next.js 16 + Tailwind + Framer Motion marketing landing page. There was:
+All customer purchases are intended to be collected by Axelerate on the website, then settled internally with AOETO. Customer screens never show commission, supplier cost, or internal ownership. Historical payment recipients are not rewritten.
 
-- No authentication
-- No database
-- No Shopify, Stripe, or CRM integration
-- No cart or checkout
-- No admin surface
-- Hosting assumed as Vercel via GitHub (`axeleratebeauty-website`)
+## Current status
 
-Existing Full Salon System storytelling, photography, and design tokens were preserved.
+| Area | Status |
+| --- | --- |
+| Phase 1 permission, price isolation, atomic checkout, inquiry persist | Implemented in code; waiting for Supabase migration apply |
+| Phase 2 Zoho CRM server layer, mapping, retry | Implemented; waiting for Zoho OAuth credentials |
+| Phase 3 HQ/store authorization and partner portal | Implemented against new tables; waiting for migration + real accounts |
+| Phase 4 Zoho Commerce catalog switch | Client + `CATALOG_SOURCE` flag only. One-SKU verification not run |
+| Phase 5 billing, refunds, AOETO settlement drafts | Foundation only. No live Books posting |
+| Phase 6 public UX, a11y, SEO | Partial: homepage paths, noindex, labels, reduced motion |
 
-## Selected architecture: Option B
+This increment does **not** deploy production, charge cards, send customer email, or run destructive production migrations.
 
-**Existing Next.js frontend + Supabase auth/database + Stripe-hosted Checkout.**
+## Architecture
 
-Why not Shopify: the brief forbids assuming Shopify Plus / paid B2B. Shopify would also create a second customer-account system unless the entire site moved onto Shopify.
+- **Next.js**: public brand site + partner portal + protected server actions
+- **Supabase**: transitional auth, RLS, orders, sync jobs, product cache
+- **Stripe Checkout**: hosted payment. Success page is never payment proof
+- **Zoho CRM**: customers, contacts, inquiries, follow-up (when configured)
+- **Zoho Commerce**: intended future source of purchasable SKUs and customer prices
+- **Zoho Books**: future invoices and payables. Not enabled
+- **Catalyst**: later option only. Auth is not being rewritten onto it
 
-Why not a custom card vault: PCI and tax/shipping should stay on hosted infrastructure.
+### Who owns which data
 
-Tradeoffs:
+| Data | Source of truth | Website role |
+| --- | --- | --- |
+| Marketing pages, programs, approved case stories | Website | Author and publish |
+| Login identity | Supabase Auth | Authenticate |
+| Approval / suspend / store assignment | Website admin | Controls portal access |
+| Zoho Account / Contact IDs | Admin mapping after live CRM read | Store IDs only; never bind by company name |
+| CRM follow-up notes | Zoho CRM | Sync inbound later; ignore website-origin loops |
+| Purchasable SKU, publish state, customer price | Zoho Commerce after one-SKU verification | Local `products` becomes read-only cache |
+| Checkout order, Stripe IDs, payment status | Website + Stripe | Persist even if Zoho sync fails |
+| Supplier cost, commission, AOETO payable | Internal `settlement_records` | Never shown to customers |
+| In-transit AOETO lots | `inbound_shipments` | Not sellable SKUs |
+| Laredo contract text | Existing contract | Installments stay on the contract; no extra sales orders |
 
-- Requires a Supabase project and Stripe account
-- Tax/shipping accuracy depends on Stripe Tax and shipping configuration
-- Admin is a lightweight internal UI; Stripe Dashboard remains the payment console
+Field owners are also listed in `src/lib/integrations/zoho/mappings.ts`.
 
-## What shipped in this increment
+## Phase 1 fixes shipped
 
-- Unified navigation and dual-offer homepage
-- `/full-salon-system` consultative funnel (no $10,000 cart item)
-- `/professional-programs` catalog and `/professional-programs/[slug]` template
-- `/professional-kits` redirects to the programs catalog; prices remain unpublished
-- Secure product model with Draft / Active / Archived
-- Partner register / login / dashboard / orders / profile
-- Cookie cart with server-side price validation
-- Stripe Checkout session creation
-- Webhook-verified payment confirmation
-- Admin review of accounts, products, and fulfillment
-- Draft policy pages that are **not** final legal terms
+1. **Profile privileges.** Users can update `full_name` only. Trigger blocks `is_admin`, `role`, and `organization_id` changes except via service role.
+2. **Protected prices.** Public catalog reads `catalog_products` / explicit columns. `professional_price_cents` is not selected for anonymous or unapproved users. `product_offers` has no public SELECT.
+3. **Checkout.** Order items must insert before Stripe session creation. Failed item writes delete the pending order. Amounts are integer cents from authorized offers, not the browser.
+4. **Webhooks.** `claim_processed_event` is unique per Stripe event. `mark_order_paid` updates only when not already paid. Inventory uses `decrement_tracked_inventory`. Processing failures are stored and the event claim is released so Stripe can retry.
+5. **Auth.** New registrations create a **new pending organization**. Existing companies are joined only through an admin invite token matched to email. Confirmation goes to `/auth/callback`. Password reset goes to `/partner/reset`.
+6. **Inquiries.** Success is returned only after the row is saved. Mailto is an optional backup, not completion proof.
 
-No unpublished kits were invented. The catalog stays empty until an admin enters approved SKUs and prices.
+## Database migration
 
-## Configuration steps
+Apply in a staging/project SQL editor, never blindly on production:
 
-1. Create a Supabase project.
-2. Run `supabase/schema.sql` in the SQL editor.
-3. Enable Email auth. Turn on email confirmation for production.
-4. Create your user, then set `profiles.is_admin = true` for that user after first login, or insert the profile row manually.
-5. Add env vars from `.env.example`.
-6. For local UI review only, set `DEV_PREVIEW_AUTH=true` in `.env.local` and restart `npm run dev`. This is ignored in production and on non-localhost hosts. It does not create real accounts or paid orders.
-6. Create a Stripe sandbox account.
-7. Point webhook `checkout.session.completed` to `/api/webhooks/stripe`.
-8. Do not switch to live keys until tax, shipping, and policies are approved.
+1. `supabase/schema.sql` if the project is new
+2. `supabase/migrations/20261019_phase1_security.sql`
 
-## How to add and publish the four products
+Rollback: `supabase/migrations/20261019_phase1_security_rollback.sql`  
+Rollback restores the older public product policy and drops new tables. It does not delete paid orders. Review before running.
 
-1. Sign in as a platform admin and open `/admin`.
-2. Enter official SKU, slug, name, description, intended use, and price in **cents**.
-3. Leave status `draft` until contents, images, shipping attributes, and inventory are approved.
-4. Set status to `active` only when the launch checklist is complete.
-5. Draft and archived products cannot be purchased.
+Compatibility: the app still starts without the migration. Location memberships and the catalog view will be empty/unavailable, so purchasing stays locked instead of inventing data.
 
-Launch checklist before Active:
+## Environment variables
 
-- Official name and SKU
-- Approved price
-- Package contents
-- Shipping attributes
-- Inventory or fulfillment setting
-- Professional-use notes / precautions if required
+See `.env.example`. No real secrets belong in git.
 
-## How to approve businesses
+| Name | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | Canonical site URL and auth redirects |
+| `DEV_PREVIEW_AUTH` | Localhost-only fake approved session |
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser/server user client |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only privileged writes after identity checks |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe.js if used |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Checkout + webhook verify |
+| `STRIPE_AUTOMATIC_TAX` | Enable only after Stripe Tax is configured |
+| `CATALOG_SOURCE` | `supabase_cache` (default) or `zoho_commerce` |
+| `ZOHO_CLIENT_ID` / `ZOHO_CLIENT_SECRET` / `ZOHO_REFRESH_TOKEN` | Server OAuth only |
+| `ZOHO_ACCOUNTS_URL` / `ZOHO_API_DOMAIN` | Data-center accounts host and fallback API host. Runtime uses `api_domain` from token refresh |
+| `ZOHO_COMMERCE_ORG_ID` / `ZOHO_COMMERCE_API_DOMAIN` | Commerce admin API, not the public storefront |
 
-`/admin` → Business accounts → Approved / Rejected / Suspended.
+## Zoho and payment console setup
 
-Pending and rejected accounts cannot checkout. Suspended accounts are blocked server-side.
+### Zoho CRM
 
-## How to manage orders
+1. Create a server-side OAuth client. Do not expose secrets with `NEXT_PUBLIC_`.
+2. Use the correct accounts host for the data center.
+3. Minimum scopes used by this repo: Leads create/read, Accounts read, Contacts create/read, Deals create/read.
+4. Store a refresh token in `ZOHO_REFRESH_TOKEN`.
+5. Known HQ IDs are **candidates only**. An admin must open `/admin`, enter the exact ID, and let the server read the Account before binding:
 
-Orders are created as `pending_payment`. They become `paid` only after a verified Stripe webhook. Use `/admin` to add tracking and fulfillment status. Refunds should be processed in Stripe, then recorded on the order.
+- Brow Arc: `7644545000000710001` (commission)
+- Belle Brows & Beauty: `7644545000000710002` (wholesale)
+- AOETO USA INC.: `7644545000000710003` (internal, not a website buyer)
 
-## Shipping and tax
+Flora is not a sales customer and is not seeded.
 
-- Shipping address collection is U.S.-only at checkout.
-- Set `STRIPE_AUTOMATIC_TAX=true` only after Stripe Tax is configured.
-- Resale exemption must not be assumed. Collect certificates and configure Stripe Tax / accounting separately.
+### Zoho Commerce
 
-## Refunds
+Official admin product API: `GET https://commerce.zoho.com/store/api/v1/products` with `X-com-zoho-store-organizationid`.  
+The public storefront API is **not** used for customer or supplier prices. `purchase_rate` must stay server-side.
 
-Use Stripe Dashboard or the Stripe refund API. Do not mark an order refunded in the website unless the Stripe refund succeeded.
+Do not set `CATALOG_SOURCE=zoho_commerce` until one real SKU is read, priced, and ordered in a sandbox. Until then the local catalog is a transitional cache.
 
-## Connecting live payments
+### Stripe
 
-1. Complete legal policies.
-2. Confirm nexus and tax settings with accounting.
-3. Replace sandbox keys with live keys.
-4. Update the webhook endpoint to production.
-5. Place a real low-value test only with an approved internal account.
+1. Sandbox first.
+2. Webhooks: `checkout.session.completed`, plus refund events (`charge.refunded` / `refund.created`).
+3. Endpoint: `/api/webhooks/stripe`.
+4. Collect U.S. shipping. Do not advertise free shipping or tax.
 
-## Verification run in this increment
+## Commercial rules encoded in code
 
-- `npm test`: 6 commerce-guard tests passed (unapproved/suspended buyers, draft/archived products, catalog prices, quantity bounds).
+- **Brow Arc (commission):** 15% of supplier-price sales, including replenishment. Missing supplier cost → `cost_missing`. Never use $0 or the customer selling price as the base. Tax, shipping, fees, and refunds are separate. No automatic AOETO due date.
+- **Belle Brows / Axelerate direct (wholesale):** store sale, purchase cost, fees, and payable separately. Missing cost is not profit.
+- One website order = one store. HQ users may switch authorized stores.
+- Laredo $10,500 / 3×$3,500 stays a contract. Estimated dates do not complete training or trigger collection. The $3,000 bonus is not receivable until verified.
+- Five AOETO ocean lots are inbound supply, not five customer orders and not sellable SKUs.
+
+## Partner portal routes
+
+- `/partner/register` `/partner/login` `/partner/reset` `/partner/dashboard`
+- `/partner/catalog` `/partner/orders` `/partner/billing` `/partner/profile` `/partner/support`
+- `/cart` `/checkout/success` `/checkout/cancel`
+
+Customer-facing copy stays in English and does not mention CRM fields or settlement math.
+
+## Public site
+
+Homepage now has two paths: Full Salon System consultation and professional login/reorder. Full Salon System remains consultative. Policy pages remain drafts and are noindexed.
+
+## Launch checklist before real charges
+
+1. Apply the Phase 1 migration on the intended Supabase project.
+2. Confirm email auth, `/auth/callback`, and reset email templates.
+3. Create the first platform admin in SQL (`profiles.is_admin = true`). Never allow self-promotion.
+4. Map verified Zoho Accounts. Invite existing chain staff; do not let them type into Brow Arc / Belle Brows.
+5. Publish only approved SKUs, linked by SKU / Zoho Product ID.
+6. Finish shipping, tax, resale-certificate, and legal policy review.
+7. Use Stripe sandbox, then one internal live test.
+8. Keep `CATALOG_SOURCE=supabase_cache` until Commerce verification succeeds.
+9. Do not enable Books dual-posting while website settlement records exist.
+
+## Verification
+
+- `npm test`: 24 passed (commerce guards, public price strip, settlement drafts, Zoho-not-configured).
 - `npm run lint`: passed.
 - `npm run build`: passed (Next.js 16.2.11).
-- Browser checks on localhost: homepage dual-offer navigation, `/professional-kits` empty catalog, `/full-salon-system` consultative CTAs only, `/cart` empty, `/partner/register` pending-account copy, `/partner/dashboard` and `/admin` redirect to login, unpublished product slug returns 404, `/store-evaluation` inquiry form still works.
-- Live Stripe checkout was not executed. No sandbox or live payment was completed.
+- Browser on localhost with `DEV_PREVIEW_AUTH`: homepage dual CTAs, Full Salon System remains consultative, cart shows store selector and empty state, partner dashboard/catalog/billing render without fake products or fake paid orders, register copy states that a typed company name does not join an existing group, privacy policy stays a draft, inquiry submit does not claim success when validation fails.
+- Live Stripe checkout was not executed.
+- Zoho CRM/Commerce live calls were not executed. Missing credentials correctly throw `not_configured` instead of a fake success.
 
-## Known blockers
+Intentionally **not** claimed as passing:
 
-- Supabase and Stripe credentials are not in this repository.
-- The four kit names, prices, SKUs, images, and contents are not approved yet.
-- Policy copy is placeholder text.
-- Confirmation emails, CRM sync, file-upload storage, analytics events, and ACH/net terms are not activated.
-- Rate limiting still depends on Supabase Auth / hosting defaults; add a dedicated limiter before production.
-- No live order has been processed.
-
-## Security notes
-
-- Cart prices from the browser are ignored.
-- Product publication and buyer approval are enforced in server actions.
-- Webhook signatures are verified.
-- Duplicate `checkout.session.completed` events are ignored when already paid.
-- Organization-scoped RLS limits customer reads to their own orders and profile.
-- Service-role key must remain server-side only.
+- Live Stripe payment or refund
+- Live Zoho CRM lead create
+- Zoho Commerce SKU read, customer price book, or order
+- Concurrent inventory under production load
+- Email deliverability and confirmation-mail templates
+- Production RLS against a live project
+- Books posting or AOETO payout calculation with real costs

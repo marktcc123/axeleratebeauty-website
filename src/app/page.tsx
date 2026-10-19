@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Faqs } from "@/components/Faqs";
 import { Hero } from "@/components/Hero";
 import { Metrics } from "@/components/Metrics";
@@ -9,6 +10,13 @@ import { Trust } from "@/components/Trust";
 import { WholesaleInvite } from "@/components/WholesaleInvite";
 import { listPublishedProducts } from "@/lib/catalog";
 import { getSession } from "@/lib/session";
+
+export const metadata: Metadata = {
+  title: "Dermabell Professional | Korean Skincare for Beauty Businesses",
+  description:
+    "Explore a complete salon implementation or log in to reorder authorized professional products. Operated in the U.S. by Axelerate Inc.",
+  alternates: { canonical: "/" },
+};
 
 export default async function Home() {
   const [products, session] = await Promise.all([listPublishedProducts(), getSession()]);

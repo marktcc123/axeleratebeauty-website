@@ -7,7 +7,7 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const preview = isDevPreviewEnabled(request.nextUrl.hostname) || isDevPreviewEnabled(request.headers.get("host"));
 
-  if (path.startsWith("/partner") && !["/partner/login", "/partner/register"].includes(path)) {
+  if (path.startsWith("/partner") && !["/partner/login", "/partner/register", "/partner/reset"].includes(path)) {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL && !preview) {
       return NextResponse.redirect(new URL("/partner/login", request.url));
     }

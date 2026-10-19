@@ -12,7 +12,9 @@ export class CommerceError extends Error {
       | "invalid_quantity"
       | "price_unavailable"
       | "empty_cart"
-      | "not_configured",
+      | "not_configured"
+      | "location_required"
+      | "price_changed",
   ) {
     super(message);
     this.name = "CommerceError";
@@ -22,6 +24,7 @@ export class CommerceError extends Error {
 export function assertApprovedBuyer(input: {
   userId?: string | null;
   verificationStatus?: string | null;
+  activeLocationId?: string | null;
 }) {
   if (!input.userId) {
     throw new CommerceError("Sign in with an approved business account to purchase.", "unauthenticated");
@@ -32,14 +35,20 @@ export function assertApprovedBuyer(input: {
   if (input.verificationStatus !== "approved") {
     throw new CommerceError("Purchasing is available after business verification.", "unapproved");
   }
+  if (!input.activeLocationId) {
+    throw new CommerceError("Select an authorized store before checkout.", "location_required");
+  }
 }
 
 export function assertPurchasableProduct(product: Product | null) {
   if (!product || product.publicationStatus !== "active") {
     throw new CommerceError("This product is not available for purchase.", "unpublished");
   }
+  if (product.productKind === "full_system" || product.productKind === "internal_lot") {
+    throw new CommerceError("This item is not available as a standard checkout product.", "unpublished");
+  }
   if (product.professionalPriceCents == null || product.professionalPriceCents < 0) {
-    throw new CommerceError("This product does not have an approved price.", "price_unavailable");
+    throw new CommerceError("This product does not have an approved price for the selected store.", "price_unavailable");
   }
   if (product.inventoryStatus === "out_of_stock") {
     throw new CommerceError("This product is currently out of stock.", "out_of_stock");
@@ -85,9 +94,12 @@ export function cartTotals(lines: { lineTotalCents: number }[]) {
   const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
   return {
     subtotalCents,
-    shippingCents: 0,
-    taxCents: 0,
-    totalCents: subtotalCents,
+    shippingCents: null as number | null,
+    taxCents: null as number | null,
+    shippingPending: true,
+    taxPending: true,
+    merchandiseCents: subtotalCents,
+    totalCents: null as number | null,
   };
 }
 
@@ -103,4 +115,9 @@ export function formatMoney(cents: number, currency = "USD") {
     style: "currency",
     currency,
   }).format(cents / 100);
+}
+
+export function formatPendingMoney(cents: number | null, pending: boolean, currency = "USD") {
+  if (pending || cents == null) return "To be calculated";
+  return formatMoney(cents, currency);
 }

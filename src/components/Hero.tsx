@@ -52,8 +52,8 @@ export function Hero() {
             <Link href="/full-salon-system" className="inline-flex bg-charcoal px-7 py-3.5 text-sm font-medium text-cream hover:bg-ink">
               Explore the Full Salon System
             </Link>
-            <Link href="/professional-programs" className="text-sm tracking-wide text-stone-deep underline-offset-4 hover:underline">
-              Explore Professional Programs
+            <Link href="/partner/login" className="text-sm tracking-wide text-stone-deep underline-offset-4 hover:underline">
+              Professional login / reorder
             </Link>
           </div>
           <Link href="/success-stories" className="mt-4 inline-block text-sm text-muted underline-offset-4 hover:underline">

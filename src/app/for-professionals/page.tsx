@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageIntro } from "@/components/site/PageIntro";
+
+export const metadata: Metadata = {
+  title: "For Professionals",
+  description: "Register a beauty business, wait for approval, then view authorized professional pricing and reorder published products.",
+  alternates: { canonical: "/for-professionals" },
+};
 
 export default function ForProfessionalsPage() {
   return (

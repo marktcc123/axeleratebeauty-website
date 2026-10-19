@@ -1,3 +1,5 @@
+import type { CatalogSource } from "@/lib/types";
+
 export function isSupabaseConfigured() {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -19,4 +21,21 @@ export function siteUrl() {
 
 export function stripeAutomaticTax() {
   return process.env.STRIPE_AUTOMATIC_TAX === "true";
+}
+
+export function catalogSource(): CatalogSource {
+  return process.env.CATALOG_SOURCE === "zoho_commerce" ? "zoho_commerce" : "supabase_cache";
+}
+
+export function isZohoCrmConfigured() {
+  return Boolean(
+    process.env.ZOHO_CLIENT_ID &&
+      process.env.ZOHO_CLIENT_SECRET &&
+      process.env.ZOHO_REFRESH_TOKEN &&
+      process.env.ZOHO_ACCOUNTS_URL,
+  );
+}
+
+export function isZohoCommerceConfigured() {
+  return Boolean(isZohoCrmConfigured() && process.env.ZOHO_COMMERCE_ORG_ID);
 }
