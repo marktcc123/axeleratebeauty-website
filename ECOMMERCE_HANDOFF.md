@@ -25,6 +25,9 @@ This increment does **not** deploy production, charge cards, send customer email
 - Migration order is columns first, then tables, then `catalog_products`, then policies/functions. Existing same-name policies from `schema.sql` are dropped before recreate.
 - Public catalog reads only `catalog_products` columns. Database errors are thrown (`CatalogError`); they are not converted into an empty warehouse.
 - Payment, event, inventory, and refund RPCs revoke `PUBLIC` / `anon` / `authenticated` execute. `protect_profile_privileges` never treats `current_user` as caller authorization.
+- Inventory decrement locks the product row, uses a conditional quantity update, and deletes any movement if the update does not apply exactly one row.
+- Replayed `mark_order_paid` calls leave `partially_refunded` / `refunded` in place.
+- Refunds lock the order (then existing refund rows) before summing. `succeeded` and `failed` are not overwritten by a later `pending` event.
 - Webhook claim is not completion. Failed or stale claims can be reclaimed. Missing orders fail. Card is the only Checkout payment method; async success/failure events are handled.
 - Refunds dedupe by Stripe refund ID, accumulate succeeded amounts, and mark the order refunded only when the total is covered.
 - Checkout requires Stripe Tax + `STRIPE_SHIPPING_RATE_ID`. Unknown tax/shipping is never treated as $0. Session create uses an idempotency key; unlinkable sessions are expired.
@@ -65,14 +68,18 @@ Apply in a staging/project SQL editor, never blindly on production:
 
 1. `supabase/schema.sql` if the project is new
 2. `supabase/migrations/20261019_phase1_security.sql`
+3. `supabase/migrations/20261019_phase1_rpc_hardening.sql`
+4. `supabase/staging/seed_internal_test.sql` on staging only
 
 Rollback: `supabase/migrations/20261019_phase1_security_rollback.sql`  
 Rollback restores the older public product policy and drops new tables. It does not delete paid orders. Review before running.
 
 Temporary-database verification (not production, not `npm build`):
 
-- `npm test` / `npm run test:db` loads `supabase/test/bootstrap.sql` + `schema.sql` + the Phase 1 migration into PGlite and asserts catalog columns, RPC privileges, claim/complete, refund accumulation, and inventory rules.
+- `npm test` / `npm run test:db` loads bootstrap + `schema.sql` + both Phase 1 migrations into PGlite.
+- Those tests are a **single PGlite connection**. They do not prove hosted multi-connection concurrency.
 - PGlite does not ship `pgcrypto`. The test skips that one `CREATE EXTENSION` line; `gen_random_uuid()` comes from core Postgres.
+- Staging console steps and env var names: `supabase/staging/CHECKLIST.md`.
 
 ## Environment variables
 
@@ -159,25 +166,25 @@ Homepage now has two paths: Full Salon System consultation and professional logi
 
 ## 实际通过
 
-- `npm test`: 42 passed, including:
-  - PGlite execution of `schema.sql` + `20261019_phase1_security.sql`
-  - Anonymous `catalog_products` visibility for a real-structure test product (`TEST-BELLE-01`) without `professional_price_cents` / `available_quantity`
-  - Privilege trigger does not honor `current_user`; explicit `app.allow_privilege_write` is required
-  - Webhook claim ≠ complete; concurrent `in_progress`; reclaim after fail; missing order is not success
-  - Inventory rejects non-positive qty; refunds accumulate; full refund only when `refunded_cents >= total_cents`
-  - RPC execute revoked from `anon` / `PUBLIC`
-  - Tier math, settlement field isolation, Excel E ÷ 0.6, checkout readiness
-- `npm run test:db` is the same PGlite suite.
+- Local `npm test` on a single PGlite connection, including:
+  - `schema.sql` + `20261019_phase1_security.sql` + `20261019_phase1_rpc_hardening.sql`
+  - Failed tracked decrement leaves no inventory movement
+  - Paid-event replay does not overwrite `partially_refunded` or `refunded`
+  - Late `pending` refunds do not replace `succeeded` or `failed`
+  - Sequential same-connection refund totals
+  - Staging seed creates Melting Mask 1200/1440/1728 and split Zoho IDs
+  - Earlier catalog, privilege, claim, and settlement assertions
 - `npm run lint` and `npm run build` are compiled separately; they do **not** replace the migration test.
 
 ## 尚未验证
 
+- Hosted Supabase apply of schema + both migrations
+- Hosted / multi-connection inventory or refund concurrency (PGlite single-connection tests are not this proof)
 - Live Stripe sandbox charge, refund, or webhook delivery
-- Hosted Supabase / production RLS against a real project
-- Concurrent inventory under production load
+- Production RLS against a live project
 - Zoho CRM live Account read or Lead create
 - Zoho Commerce SKU read, customer price book, or order
 - Email deliverability and confirmation-mail templates
 - Books posting or AOETO payout with verified real costs
 - Browser checkout with tax + shipping rate configured
-- Production apply of `schema.sql` + this migration
+- Production apply of any SQL in this branch

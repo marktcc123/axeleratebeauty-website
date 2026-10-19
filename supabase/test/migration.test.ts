@@ -20,6 +20,7 @@ describe("schema.sql + phase 1 migration on a temporary database", () => {
     await db.exec(sql("supabase/test/bootstrap.sql"));
     await db.exec(sql("supabase/schema.sql"));
     await db.exec(sql("supabase/migrations/20261019_phase1_security.sql"));
+    await db.exec(sql("supabase/migrations/20261019_phase1_rpc_hardening.sql"));
   }, 30000);
 
   afterAll(async () => {
