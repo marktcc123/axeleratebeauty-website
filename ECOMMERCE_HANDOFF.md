@@ -24,6 +24,7 @@ This increment does **not** deploy production, charge cards, send customer email
 
 - Migration order is columns first, then tables, then `catalog_products`, then policies/functions. Existing same-name policies from `schema.sql` are dropped before recreate.
 - Public catalog reads only `catalog_products` columns. Database errors are thrown (`CatalogError`); they are not converted into an empty warehouse.
+- `catalog_products` is still `security_invoker=false` so anonymous SELECT works while `products` has no browser policy. Independent migration `20261020065643_catalog_products_select_only.sql` revokes PUBLIC/anon/authenticated writes and leaves SELECT. The `security_definer_view` advisor remains expected.
 - Payment, event, inventory, and refund RPCs revoke `PUBLIC` / `anon` / `authenticated` execute. `protect_profile_privileges` never treats `current_user` as caller authorization.
 - Inventory decrement locks the product row, uses a conditional quantity update, and deletes any movement if the update does not apply exactly one row.
 - Replayed `mark_order_paid` calls leave `partially_refunded` / `refunded` in place.
@@ -74,7 +75,8 @@ Apply in a staging/project SQL editor, never blindly on production:
 1. `supabase/schema.sql` if the project is new
 2. `supabase/migrations/20261019_phase1_security.sql`
 3. `supabase/migrations/20261019_phase1_rpc_hardening.sql`
-4. `supabase/staging/seed_internal_test.sql` on staging only
+4. `supabase/migrations/20261020065643_catalog_products_select_only.sql` (idempotent grant repair; staging applied this independently)
+5. `supabase/staging/seed_internal_test.sql` on staging only
 
 Rollback: `supabase/migrations/20261019_phase1_security_rollback.sql`  
 Rollback restores the older public product policy and drops new tables. It does not delete paid orders. Review before running.
@@ -171,8 +173,10 @@ Homepage now has two paths: Full Salon System consultation and professional logi
 
 ## 实际通过
 
+- Staging project `rwxwvbhfbezqkgnaqvrq` applied `catalog_products_select_only` only. `anon`/`authenticated` now have SELECT on `catalog_products` and no INSERT/UPDATE/DELETE. `products` grants were not expanded. Role-simulated writes that matched no rows were denied and product row count stayed 2.
 - Local `npm test` on a single PGlite connection, including:
-  - `schema.sql` + `20261019_phase1_security.sql` + `20261019_phase1_rpc_hardening.sql`
+  - `schema.sql` + `20261019_phase1_security.sql` + `20261019_phase1_rpc_hardening.sql` + `20261020065643_catalog_products_select_only.sql`
+  - After a leftover `GRANT ALL`, browser roles can still SELECT the public catalog and cannot INSERT/UPDATE/DELETE through the view
   - Failed tracked decrement leaves no inventory movement
   - Paid-event replay does not overwrite `partially_refunded` or `refunded`
   - Late `pending` refunds do not replace `succeeded` or `failed`
@@ -186,7 +190,7 @@ Homepage now has two paths: Full Salon System consultation and professional logi
 
 ## 尚未验证
 
-- Hosted Supabase apply of schema + both migrations
+- Hosted Supabase apply of schema + Phase 1 + RPC hardening (migration history still only records the later grant repair)
 - Hosted / multi-connection inventory or refund concurrency (PGlite single-connection tests are not this proof)
 - Live Stripe sandbox charge, refund, or webhook delivery
 - Production RLS against a live project

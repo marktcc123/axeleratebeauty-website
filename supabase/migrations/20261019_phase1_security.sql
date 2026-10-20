@@ -339,7 +339,8 @@ create policy "users update own display name"
   with check (id = auth.uid());
 
 revoke all on table public.products from public, anon, authenticated;
-grant select on public.catalog_products to anon, authenticated;
+revoke all on table public.catalog_products from public, anon, authenticated;
+grant select on table public.catalog_products to anon, authenticated;
 
 create policy "members read authorized locations"
   on public.locations for select
