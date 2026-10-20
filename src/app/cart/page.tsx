@@ -33,9 +33,16 @@ export default async function CartPage() {
           <LocationSelect locations={session.locations} activeLocationId={session.activeLocationId} />
         </div>
         {activeStore && (
-          <p className="mt-4 text-sm text-stone-deep">
-            Ship to {activeStore.name}{activeStore.city ? ` · ${activeStore.city}` : ""}{activeStore.state ? `, ${activeStore.state}` : ""}
-          </p>
+          <div className="mt-4 space-y-1 text-sm text-stone-deep">
+            <p>
+              Ordering for {activeStore.name}
+              {activeStore.city ? ` · ${activeStore.city}` : ""}
+              {activeStore.state ? `, ${activeStore.state}` : ""}
+            </p>
+            <p className="text-muted">
+              Checkout will collect the delivery address. Store name and city are not a complete shipping address.
+            </p>
+          </div>
         )}
         <CartEditor
           lines={lines}

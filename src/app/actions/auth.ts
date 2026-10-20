@@ -8,7 +8,9 @@ import { classifyLoginFailure, classifyResetSendError, AUTH_STATUS_MESSAGES } fr
 import { logAuthEvent } from "@/lib/auth/log";
 import { isSupabaseConfigured, siteUrl } from "@/lib/config";
 import { checkRateLimit, clientKey } from "@/lib/rate-limit";
+import { getSession } from "@/lib/session";
 import { createServerSupabase, createServiceSupabase } from "@/lib/supabase/server";
+import { canPurchase } from "@/lib/types";
 
 function formText(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -220,7 +222,8 @@ export async function loginBusiness(formData: FormData) {
     logAuthEvent({ stage: "login", code: classified.logCode, status: error.status, configured: true });
     return { error: classified.userMessage };
   }
-  redirect("/partner/dashboard");
+  const session = await getSession();
+  redirect(canPurchase(session) ? "/partner/catalog" : "/partner/dashboard");
 }
 
 export async function logoutBusiness() {

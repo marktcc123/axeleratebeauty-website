@@ -2,17 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/commerce/AddToCartButton";
 import { Media } from "@/components/Media";
-import { getProductsByIds, getPublishedProduct } from "@/lib/catalog";
-import { publicPriceLabel } from "@/lib/commerce/guards";
+import { getAuthorizedProductsByIds, getProductsByIds, getPublishedProduct } from "@/lib/catalog";
+import { authorizedPriceLabel, publicPriceLabel } from "@/lib/commerce/guards";
 import { getSession } from "@/lib/session";
 import { canPurchase } from "@/lib/types";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = await getPublishedProduct(slug);
-  if (!product) notFound();
+  const published = await getPublishedProduct(slug);
+  if (!published) notFound();
 
   const session = await getSession();
+  const approved = canPurchase(session);
+  const [priced] = approved
+    ? await getAuthorizedProductsByIds([published.id], session)
+    : [published];
+  const product = priced ?? published;
   const related = await getProductsByIds(product.relatedProductIds);
   const image = product.images[0] ?? "/images/product-line.webp";
 
@@ -24,13 +29,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted">{product.sku}</p>
           <h1 className="mt-3 font-serif text-4xl text-ink">{product.name}</h1>
           <p className="mt-4 text-lg text-muted">{product.description}</p>
-          <p className="mt-6 text-stone-deep">{publicPriceLabel(product)}</p>
+          <p className="mt-6 text-stone-deep">
+            {approved ? authorizedPriceLabel(product) : publicPriceLabel(product)}
+          </p>
           <p className="mt-2 text-sm text-muted">
             Availability: {product.inventoryStatus.replaceAll("_", " ")}
           </p>
           <div className="mt-8">
-            {canPurchase(session) ? (
+            {approved && product.professionalPriceCents != null ? (
               <AddToCartButton productId={product.id} allowQuantity />
+            ) : approved ? (
+              <p className="text-sm text-muted">Price pending for this store. Purchasing is unavailable until a valid tier price is assigned.</p>
             ) : (
               <Link href="/partner/register" className="inline-block bg-charcoal px-5 py-3 text-sm text-cream">
                 Register or log in to purchase

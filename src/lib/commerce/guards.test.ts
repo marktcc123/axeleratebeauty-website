@@ -3,9 +3,11 @@ import {
   CommerceError,
   assertApprovedBuyer,
   assertPurchasableProduct,
+  authorizedPriceLabel,
   cartTotals,
   normalizeQuantity,
   pricedCart,
+  publicPriceLabel,
 } from "./guards";
 import type { Product } from "@/lib/types";
 
@@ -70,5 +72,37 @@ describe("commerce guards", () => {
 
   it("blocks purchase when no authorized price exists", () => {
     expect(() => assertPurchasableProduct({ ...product, professionalPriceCents: null })).toThrow(CommerceError);
+  });
+
+  it("keeps public marketing prices gated on publicPriceVisible", () => {
+    expect(
+      publicPriceLabel({
+        professionalPriceCents: 1200,
+        publicPriceVisible: false,
+        currency: "USD",
+      }),
+    ).toBe("Professional Pricing Available Upon Account Approval");
+    expect(
+      publicPriceLabel({
+        professionalPriceCents: 1200,
+        publicPriceVisible: true,
+        currency: "USD",
+      }),
+    ).toBe("$12.00");
+  });
+
+  it("shows authorized partner prices without requiring publicPriceVisible", () => {
+    expect(
+      authorizedPriceLabel({
+        professionalPriceCents: 1200,
+        currency: "USD",
+      }),
+    ).toBe("$12.00");
+    expect(
+      authorizedPriceLabel({
+        professionalPriceCents: null,
+        currency: "USD",
+      }),
+    ).toBe("Price pending for this store");
   });
 });

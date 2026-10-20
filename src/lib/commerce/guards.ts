@@ -103,9 +103,21 @@ export function cartTotals(lines: { lineTotalCents: number }[]) {
   };
 }
 
+/** Public/marketing surfaces: only show an amount when the SKU is marked publicly visible. */
 export function publicPriceLabel(product: Pick<Product, "professionalPriceCents" | "publicPriceVisible" | "currency">) {
   if (!product.publicPriceVisible || product.professionalPriceCents == null) {
     return "Professional Pricing Available Upon Account Approval";
+  }
+  return formatMoney(product.professionalPriceCents, product.currency);
+}
+
+/**
+ * Partner catalog after approval: show the server-resolved authorized unit price.
+ * Does not use publicPriceVisible — that flag is only for anonymous/public marketing.
+ */
+export function authorizedPriceLabel(product: Pick<Product, "professionalPriceCents" | "currency">) {
+  if (product.professionalPriceCents == null) {
+    return "Price pending for this store";
   }
   return formatMoney(product.professionalPriceCents, product.currency);
 }

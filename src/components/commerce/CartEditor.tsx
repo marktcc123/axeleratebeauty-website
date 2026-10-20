@@ -131,7 +131,11 @@ export function CartEditor({
     return (
       <div className="mt-10 space-y-4">
         {error && <p className="text-sm text-accent-tac" role="alert">{error}</p>}
-        <p className="text-muted">Your cart is empty. Published products can be added after account approval.</p>
+        <p className="text-muted">
+          {canCheckout
+            ? "Your cart is empty. Browse the authorized catalog to add products for this store."
+            : "Your cart is empty. Purchasing unlocks after account approval."}
+        </p>
       </div>
     );
   }

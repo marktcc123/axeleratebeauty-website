@@ -14,6 +14,17 @@ export function LocationSelect({
     return <p className="text-sm text-muted">No authorized store is linked to this account yet.</p>;
   }
 
+  const selected = locations.find((location) => location.id === activeLocationId) ?? locations[0];
+  const label = `${selected.name}${selected.city ? ` · ${selected.city}` : ""}${selected.state ? `, ${selected.state}` : ""}`;
+
+  if (locations.length === 1) {
+    return (
+      <p className="text-sm text-stone-deep">
+        Ordering store: <strong>{label}</strong>
+      </p>
+    );
+  }
+
   return (
     <form
       className="grid gap-2 sm:max-w-md"
