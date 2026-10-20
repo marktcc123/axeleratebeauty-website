@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { readCart } from "@/lib/cart-cookie";
 import { getAuthorizedProductsByIds } from "@/lib/catalog";
+import { isNextRedirectError, logCheckoutEvent, stripeErrorFields } from "@/lib/commerce/checkout-log";
 import { CommerceError, assertApprovedBuyer, cartTotals, pricedCart } from "@/lib/commerce/guards";
 import { STRIPE_CHECKOUT_PAYMENT_METHODS, checkoutReadiness } from "@/lib/commerce/payments";
 import {
@@ -16,6 +17,10 @@ import { getSession } from "@/lib/session";
 import { getStripe } from "@/lib/stripe";
 import { createServiceSupabase } from "@/lib/supabase/server";
 
+export type CheckoutFormState = {
+  error: string | null;
+};
+
 function orderNumber() {
   return `DB-${Date.now().toString(36).toUpperCase()}`;
 }
@@ -28,7 +33,12 @@ async function expireOrphanSession(stripe: NonNullable<ReturnType<typeof getStri
   }
 }
 
-export async function startCheckout() {
+export async function startCheckout(
+  previous: CheckoutFormState = { error: null },
+  formData?: FormData,
+): Promise<CheckoutFormState> {
+  void previous;
+  void formData;
   const ready = checkoutReadiness({
     stripeConfigured: isStripeConfigured(),
     automaticTax: stripeAutomaticTax(),
@@ -44,7 +54,6 @@ export async function startCheckout() {
   } catch (error) {
     return {
       error: error instanceof CommerceError ? error.message : "Purchasing is not available.",
-      redirectTo: session.userId ? "/partner/dashboard" : "/partner/login",
     };
   }
 
@@ -112,8 +121,20 @@ export async function startCheckout() {
     .single();
 
   if (orderError || !order) {
+    logCheckoutEvent({
+      stage: "order_create",
+      code: orderError?.code ?? "order_create_failed",
+      status: orderError ? 400 : null,
+    });
     return { error: "The order could not be created." };
   }
+
+  logCheckoutEvent({
+    stage: "order_create",
+    code: "ok",
+    orderId: order.id,
+    orderNumber: order.order_number,
+  });
 
   const { error: itemError } = await service.from("order_items").insert(
     lines.map((line) => ({
@@ -127,12 +148,31 @@ export async function startCheckout() {
   );
 
   if (itemError) {
+    logCheckoutEvent({
+      stage: "order_items_create",
+      code: itemError.code ?? "order_items_failed",
+      orderId: order.id,
+      orderNumber: order.order_number,
+    });
     const { error: deleteError } = await service.from("orders").delete().eq("id", order.id).eq("payment_status", "pending");
     if (deleteError) {
-      return { error: `Order items failed and the pending order could not be rolled back: ${deleteError.message}` };
+      logCheckoutEvent({
+        stage: "order_items_create",
+        code: deleteError.code ?? "order_rollback_failed",
+        orderId: order.id,
+        orderNumber: order.order_number,
+      });
+      return { error: "Order items failed and the pending order could not be rolled back." };
     }
     return { error: "Order items could not be saved, so payment was not started." };
   }
+
+  logCheckoutEvent({
+    stage: "order_items_create",
+    code: "ok",
+    orderId: order.id,
+    orderNumber: order.order_number,
+  });
 
   let checkout;
   try {
@@ -167,29 +207,64 @@ export async function startCheckout() {
       },
       { idempotencyKey: order.stripe_idempotency_key ?? order.id },
     );
-  } catch {
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
+    const stripeError = stripeErrorFields(error);
+    logCheckoutEvent({
+      stage: "stripe_session_create",
+      code: stripeError.code,
+      status: stripeError.status,
+      orderId: order.id,
+      orderNumber: order.order_number,
+    });
     await service.from("orders").update({ status: "cancelled", payment_status: "failed" }).eq("id", order.id);
     return { error: "Payment could not be started. The order was not charged." };
   }
 
   if (!checkout.url) {
+    logCheckoutEvent({
+      stage: "stripe_session_create",
+      code: "missing_checkout_url",
+      orderId: order.id,
+      orderNumber: order.order_number,
+      stripeSessionId: checkout.id,
+    });
     await expireOrphanSession(stripe, checkout.id);
     await service.from("orders").update({ status: "cancelled", payment_status: "failed" }).eq("id", order.id);
     return { error: "Stripe did not return a checkout URL." };
   }
+
+  logCheckoutEvent({
+    stage: "stripe_session_create",
+    code: "ok",
+    orderId: order.id,
+    orderNumber: order.order_number,
+    stripeSessionId: checkout.id,
+  });
 
   const { error: linkError } = await service
     .from("orders")
     .update({ stripe_checkout_session_id: checkout.id })
     .eq("id", order.id);
   if (linkError) {
+    logCheckoutEvent({
+      stage: "order_session_link",
+      code: linkError.code ?? "session_link_failed",
+      orderId: order.id,
+      orderNumber: order.order_number,
+      stripeSessionId: checkout.id,
+    });
     await expireOrphanSession(stripe, checkout.id);
     return { error: "The payment session could not be linked to the order. The hosted session was expired." };
   }
 
-  redirect(checkout.url);
-}
+  logCheckoutEvent({
+    stage: "order_session_link",
+    code: "ok",
+    orderId: order.id,
+    orderNumber: order.order_number,
+    stripeSessionId: checkout.id,
+  });
 
-export async function startCheckoutForm() {
-  await startCheckout();
+  redirect(checkout.url);
 }

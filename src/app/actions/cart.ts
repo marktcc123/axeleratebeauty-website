@@ -1,11 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { readCart, upsertItem, writeCart } from "@/lib/cart-cookie";
+import { applyCartQuantityUpdates, readCart, upsertItem, writeCart } from "@/lib/cart-cookie";
 import { getAuthorizedProductsByIds, getPublishedProduct } from "@/lib/catalog";
 import { CommerceError, normalizeQuantity } from "@/lib/commerce/guards";
 import { getSession } from "@/lib/session";
+import type { CartItem } from "@/lib/types";
 import { canPurchase } from "@/lib/types";
+
+function cartError(error: unknown) {
+  if (error instanceof CommerceError) return error.message;
+  if (error instanceof Error && error.message === "invalid_quantity") {
+    return "Enter a quantity between 1 and 99.";
+  }
+  if (error instanceof Error && error.message === "unknown_cart_item") {
+    return "That item is no longer in the cart.";
+  }
+  return "Unable to update the cart.";
+}
 
 export async function addToCart(productId: string, quantity = 1) {
   const session = await getSession();
@@ -25,25 +37,28 @@ export async function addToCart(productId: string, quantity = 1) {
     revalidatePath("/cart");
     return { error: null };
   } catch (error) {
-    return { error: error instanceof CommerceError ? error.message : "Unable to update the cart." };
+    return { error: cartError(error) };
+  }
+}
+
+export async function saveCartQuantities(updates: CartItem[]) {
+  const cart = await readCart();
+  try {
+    const next = applyCartQuantityUpdates(cart, updates);
+    await writeCart(next);
+    revalidatePath("/cart");
+    return { error: null, items: next.items };
+  } catch (error) {
+    return { error: cartError(error), items: cart.items };
   }
 }
 
 export async function updateCartItem(productId: string, quantity: number) {
-  const cart = await readCart();
-  if (quantity < 1) {
-    await writeCart(upsertItem(cart, productId, 0));
-  } else {
-    await writeCart(upsertItem(cart, productId, normalizeQuantity(quantity)));
-  }
-  revalidatePath("/cart");
-  revalidatePath("/");
+  return saveCartQuantities([{ productId, quantity }]);
 }
 
 export async function removeCartItem(productId: string) {
-  const cart = await readCart();
-  await writeCart(upsertItem(cart, productId, 0));
-  revalidatePath("/cart");
+  return saveCartQuantities([{ productId, quantity: 0 }]);
 }
 
 export async function reorderProduct(slug: string) {

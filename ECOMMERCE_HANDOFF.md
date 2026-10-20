@@ -34,6 +34,9 @@ This increment does **not** deploy production, charge cards, send customer email
 - Belle and Brow Arc are both Tier 1. Tier 2 = Tier 1 × 1.20; Tier 3 = Tier 2 × 1.20. Location > headquarters > tier. No customer tier or valid price means no purchase.
 - Belle purchase cost and Brow Arc commission base are independent. Belle unit cost = Excel E ÷ 0.6. Brow Arc commission is 15% of a confirmed supplier-price base. Missing base stays `cost_missing`.
 - CRM Product ID, Commerce Product ID, and Variant ID are stored separately.
+- Cart quantity edits are optimistic on the client, then serialized to one cookie write of the latest snapshot. Checkout stays locked while quantity is dirty or saving. Checkout still re-prices from the server cart.
+- Checkout uses a client form + `useActionState`. Failures return a readable error; success still redirects to Stripe. Diagnostic logs record stage, code/status, and association IDs only.
+- Continue shopping points to `/partner/catalog`. Homepage revalidation was removed from quantity saves.
 
 ## Architecture
 
@@ -174,6 +177,7 @@ Homepage now has two paths: Full Salon System consultation and professional logi
   - Sequential same-connection refund totals
   - Staging seed creates Melting Mask 1200/1440/1728 and split Zoho IDs
   - Earlier catalog, privilege, claim, and settlement assertions
+  - Cart quantity merge/dirty checks and checkout log redaction
 - `npm run lint` and `npm run build` are compiled separately; they do **not** replace the migration test.
 
 ## 尚未验证
@@ -189,3 +193,4 @@ Homepage now has two paths: Full Salon System consultation and professional logi
 - Browser checkout with tax + shipping rate configured
 - Production apply of any SQL in this branch
 - Real staging email delivery and first-click password recovery. Local tests do **not** prove the recovery inbox flow.
+- Browser cart quantity clicks, cookie persistence, and Stripe Checkout redirect. Local unit tests do **not** prove this UI.
