@@ -19,3 +19,6 @@ Living list from overnight / UX iteration. Status values: `done` | `in_progress`
 | B13 | Auto reorder reminders | Operator request, no validated rule | Would need email + thresholds | Design only until rules approved | Business rules + email | blocked |
 | B14 | Mobile qty steppers vs number input | Catalog uses number input | One-hand speed | Match Cart ± steppers on catalog | None | done |
 | B15 | Public professional programs vs partner catalog confusion | Marketing “programs” vs buyable SKUs | New clients ask wrong path | for-professionals copy points Login → Catalog after approval | Copy review | done |
+| B16 | Orders history flooded with failed checkout attempts | Playwright: dozens of `failed` before paid/refunded | Hard to find real orders | Default-hide failed; `?showFailed=1` toggle | None | done |
+| B17 | Staging SKUs 404 on public `/professional-kits/[slug]` for anon in some paths | Anon kit slug → 404 / programs alias | Low for buyers; marketing uses programs | Keep staging SKUs partner-catalog only | Content | deferred |
+| B18 | Footer still shows Professional Login while signed in | Snapshot footer links | Mild inconsistency | Session-aware footer later | None | deferred |

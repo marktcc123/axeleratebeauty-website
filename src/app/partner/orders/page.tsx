@@ -35,9 +35,15 @@ type PartnerOrder = {
   order_items: OrderItemSnapshot[] | null;
 };
 
-export default async function OrdersPage() {
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ showFailed?: string }>;
+}) {
   const session = await getSession();
   if (!session.userId) redirect("/partner/login");
+  const { showFailed } = await searchParams;
+  const includeFailed = showFailed === "1";
 
   const supabase = await createServerSupabase();
   const locationIds = session.locations.map((location) => location.id);
@@ -66,7 +72,11 @@ export default async function OrdersPage() {
     });
   }
 
-  const visible = classified.orders.filter((order) => !order.location_id || locationIds.includes(order.location_id));
+  const authorized = classified.orders.filter((order) => !order.location_id || locationIds.includes(order.location_id));
+  const failedCount = authorized.filter((order) => order.payment_status === "failed").length;
+  const visible = includeFailed
+    ? authorized
+    : authorized.filter((order) => order.payment_status !== "failed");
   const productIds = [
     ...new Set(
       visible.flatMap((order) => (order.order_items ?? []).map((item) => item.product_id).filter((id): id is string => Boolean(id))),
@@ -107,14 +117,45 @@ export default async function OrdersPage() {
           <p className="mt-3 text-sm text-muted sm:text-base">
             Payment and refund status come from confirmed events. Reorder uses today&apos;s authorized price, not the historical line price.
           </p>
+          {failedCount > 0 ? (
+            <p className="mt-4 text-sm text-muted">
+              {includeFailed ? (
+                <>
+                  Showing failed checkout attempts.{" "}
+                  <Link href="/partner/orders" className="underline-offset-4 hover:underline">
+                    Hide failed attempts
+                  </Link>
+                </>
+              ) : (
+                <>
+                  {failedCount} failed checkout attempt{failedCount === 1 ? "" : "s"} hidden.{" "}
+                  <Link href="/partner/orders?showFailed=1" className="underline-offset-4 hover:underline">
+                    Show failed attempts
+                  </Link>
+                </>
+              )}
+            </p>
+          ) : null}
         </header>
 
         {classified.status === "error" ? (
           <p className="mt-10 text-sm text-accent-tac" role="alert">
             Orders could not be loaded. Try again in a moment.
           </p>
-        ) : classified.status === "empty" || visible.length === 0 ? (
+        ) : classified.status === "empty" || (visible.length === 0 && authorized.length === 0) ? (
           <p className="mt-10 text-muted">No orders yet. Paid orders appear here after payment is confirmed.</p>
+        ) : visible.length === 0 ? (
+          <p className="mt-10 text-muted">
+            No paid or refunded orders yet.
+            {failedCount > 0 ? (
+              <>
+                {" "}
+                <Link href="/partner/orders?showFailed=1" className="underline-offset-4 hover:underline">
+                  Show {failedCount} failed attempt{failedCount === 1 ? "" : "s"}
+                </Link>
+              </>
+            ) : null}
+          </p>
         ) : (
           <div className="mt-8 space-y-4">
             {visible.map((order) => (

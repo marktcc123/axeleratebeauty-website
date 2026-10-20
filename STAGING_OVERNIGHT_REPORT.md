@@ -7,150 +7,138 @@ Staging Supabase: `rwxwvbhfbezqkgnaqvrq` (`axelerate-beauty-staging`)
 Fixed Preview alias: https://axeleratebeauty-website-git-feature-phas-590110-axelerateglobal.vercel.app
 
 Backlog: `PRODUCT_IMPROVEMENT_BACKLOG.md`  
-Zoho map: `docs/ZOHO_FIELD_MAP.md`
+Zoho map: `docs/ZOHO_FIELD_MAP.md`  
+Evidence: `docs/ux-evidence/`
 
-## Deploy ↔ HEAD (correct this run)
+## Deploy ↔ HEAD
 
 | Item | Value |
 | --- | --- |
-| Local HEAD at report write | *(filled after push — see §4)* |
-| Preview alias | fixed URL above |
-| Prior lag | Report previously pinned deploy commit `0f63089` while HEAD moved to `22efa1d`. Browser must re-check after UX deploy. |
-| Refund tests | **Not repeated** this run (already done on `DB-MVG7294C`) |
+| Feature UX commit | `18c6372f6c1e581eb9b22a217f43eebbc6c73bce` |
+| Follow-up (orders filter + evidence) | *(this docs commit — see git log)* |
+| Preview deploy for `18c6372` | `dpl_9z1iiHVUGHe4LkTMrNsEvDpjFWVR` → `https://axeleratebeauty-website-8w4o7gns4-axelerateglobal.vercel.app` |
+| Alias | fixed Preview URL above (tracks branch) |
+| Prior report lag | Old report pinned `0f63089` while HEAD had moved to `22efa1d`. Corrected: browser acceptance below ran on alias after `18c6372` Ready. |
+| Refund tests | **Not repeated** (`DB-MVG7294C` already covered) |
 
 ## Acceptance matrix
 
-Legend: **IV** = implemented & verified · **IU** = implemented, not yet verified on latest Preview · **NI** = not implemented · **XB** = external block
+Legend: **IV** implemented & verified · **IU** implemented, not verified on latest · **NI** not implemented · **XB** external block
 
-### Security / pricing (prior night — keep)
+### Security / pricing (prior night — retained)
 
 | Item | Status | Notes |
 | --- | --- | --- |
-| `catalog_products` SELECT-only for anon/authenticated | IV | MCP read-back prior night |
-| Approved Tier 1 Melting Mask `$12.00` on catalog | IV | Playwright prior night; re-verify after UX deploy |
-| Public pages do not show professional dollars | IU | Re-check public `/professional-kits` / programs |
-| Checkout locked without Stripe tax + shipping rate | IV | Existing code path |
-| Cart qty save + reload consistency | IU | Re-walk Phase 3 |
-| Reorder uses current authorized price (not history) | IU | Copy + server `reorderAuthorizedProduct`; stop before pay |
-| Partial/full refund UI readable | IU | StatusBadge; no new Stripe refunds |
+| `catalog_products` SELECT-only for anon/authenticated | IV | Prior MCP read-back |
+| Approved Tier 1 Melting Mask `$12.00` | IV | Playwright after UX deploy |
+| Public marketing does not show professional dollars | IV | `/professional-programs`: approval copy, no `$12` |
+| Checkout requires Stripe tax + shipping rate | IV | Existing lock |
+| Cart qty save survives reload | IV | 3→4 → reload still 4 / Line $48.00 |
+| Reorder uses current authorized price | IV | “Add again…” → cart; stop before Checkout |
+| Partial/full refund UI readable | IV | `DB-MVG7294C` shows `refunded` badge (no new refunds) |
 | Cross-company / unauthorized store hosted identity | XB | No second isolated login |
-| Stripe Tax registrations | XB | Sandbox registrations empty → tax $0 expected |
-| Zoho live CRM/Commerce write | XB | No `ZOHO_*` on Preview; map docs only |
-| CATALOG_SOURCE stays `supabase_cache` | IV | Not flipped |
+| Stripe Tax registrations | XB | Sandbox empty → tax $0 expected |
+| Zoho live write | XB | No Preview `ZOHO_*` |
+| `CATALOG_SOURCE=supabase_cache` | IV | Unchanged |
 
-### Information architecture (this run)
-
-| Item | Status | Notes |
-| --- | --- | --- |
-| Partner core = Catalog / Orders / Account | IU | SiteHeader partner mode |
-| Billing + Support + Profile hubbed | IU | `/partner/account`; old URLs redirect |
-| Approved login → Catalog | IV | `auth` action + dashboard redirect |
-| Marketing vs purchase nav not stacked | IU | Partner workspace replaces marketing links |
-| Current store + cart + account easy to find | IU | Store strip + header Cart/Account |
-| Dashboard only for non-purchasing states | IU | Pending / suspended / no locations |
-
-### Purchase UX (this run)
+### Information architecture
 
 | Item | Status | Notes |
 | --- | --- | --- |
-| Catalog replenishment rows (name/SKU/price/qty/Add) | IU | `ReplenishmentRow` |
-| Catalog qty ± steppers | IU | Match cart pattern |
-| Cart shows store, lines, pending ship/tax, save lock | IU | `CartEditor` denser layout |
-| Orders payment/fulfillment badges + reorder CTA | IU | `StatusBadge` + ReorderButton feedback |
-| Empty / no-price / OOS fixtures (local) | IV | `replenishment-row-state` unit tests |
-| Desktop 1440 / mobile 390 / 320 overflow | IU | Playwright after deploy |
-| Second friction pass after first screenshots | IU | After Phase 3 walk |
+| Core = Catalog / Orders / Account | IV | Partner workspace header |
+| Billing / Support / Profile hubbed | IV | `/partner/account` + redirects |
+| Approved login → Catalog | IV | Auth + dashboard redirect |
+| No stacked marketing+purchase nav | IV | Partner mode replaces marketing links |
+| Store + cart + account findable | IV | Store strip + header Cart/Account |
+| Dashboard for non-purchasing only | IV | Pending / suspended / no store |
+
+### Purchase UX
+
+| Item | Status | Notes |
+| --- | --- | --- |
+| Catalog replenishment rows | IV | Name / SKU / $12 / ± / Add |
+| Catalog ± steppers | IV | Playwright +1 then Add → Cart (2) |
+| Cart store + pending ship/tax + save lock | IV | Snapshot + qty persist |
+| Orders badges + reorder CTA | IV | refunded/paid/failed badges |
+| Hide failed checkout noise | IU→IV after follow-up deploy | Default hide; `?showFailed=1` |
+| Empty / no-price / OOS fixtures | IV | Unit tests `replenishment-row-state` |
+| Desktop 1440 / mobile 390 / 320 overflow | IV | Screenshots; 320 `overflowX=false` |
+| Second friction pass | IV | Orders failed-noise filter shipped |
 
 ## 1. Customer flow before → after
 
-**Public / new client**
+| Persona | Before | After |
+| --- | --- | --- |
+| New client | For Professionals unclear vs Catalog | Steps + Login CTA; public programs show approval copy, not dollars |
+| Approved buyer | Marketing header + PartnerNav stack; Billing/Support/Profile separate; card catalog | One partner header; Account hub; replenishment list; denser cart; order badges + reorder |
+| Operator | Failed checkouts buried real orders | Failed attempts hidden by default |
 
-- Before: For Professionals emphasized “programs” without clear Login → Catalog path.
-- After: Steps name Catalog after approval; Login CTA added beside register.
+**Navigation count (approved Tier 1, measured):** Catalog → set qty → Add → Cart link = **2 navigations** after land (header Cart). Reorder from Orders → Cart = **1 click** (stops before Checkout).
 
-**Approved buyer**
-
-- Before: Marketing header + PartnerNav both present; Billing/Support/Profile separate; catalog used marketing-style cards.
-- After: One partner header (Catalog / Orders / Account / Cart); store strip only; Account hub; catalog is a replenishment list with ± qty and Add; cart denser; orders show badges and “Add again at current price” with error feedback.
-
-**Operator**
-
-- No commercial rule changes. Refund/settlement behavior unchanged. Zoho still mapping-only.
-
-## 2. Page changes (product, not just file list)
+## 2. Page changes
 
 | Surface | Change |
 | --- | --- |
-| Site header | Partner workspace mode on `/partner/*` (except login/register) and `/cart` when signed in |
-| Store strip | `PartnerChrome` = ordering store + org label only |
-| Catalog | Search/filter kept; list rows replace card grid for reorder |
-| Cart | Clear store context, line money, pending ship/tax, save lock |
-| Orders | Badges; historical “was $X”; reorder at current price |
-| Account | Profile + billing snippets + support form |
-| Billing / Support / Profile URLs | Redirect to Account anchors |
-| Dashboard | Approved → Catalog; others get status + Account link |
-| For Professionals | Clearer post-approval Catalog path |
+| Site header | Partner workspace on `/partner/*` (ex login/register) + `/cart` when signed in |
+| Store strip | Ordering store + org only |
+| Catalog | Replenishment rows + search |
+| Cart | Store, lines, pending ship/tax, autosave |
+| Orders | Status badges; hide failed by default; reorder CTA |
+| Account | Profile + billing + support |
+| Billing/Support/Profile URLs | Redirect to Account |
+| Dashboard | Approved → Catalog |
+| For Professionals | Post-approval Catalog path |
 
-## 3. Evidence screenshots
-
-Committed under `docs/ux-evidence/` after Preview deploy (same viewport pairs):
+## 3. Screenshots (`docs/ux-evidence/`)
 
 | File | Viewport | State |
 | --- | --- | --- |
-| `catalog-1440.png` / `catalog-390.png` | 1440 / 390 | Logged-in Tier 1 catalog |
-| `cart-1440.png` / `cart-390.png` | 1440 / 390 | Cart with lines if present |
-| `orders-1440.png` | 1440 | Refunded/paid history (read-only) |
-| `public-home-1440.png` | 1440 | Logged-out public (no pro $) |
-| `catalog-320-overflow.png` | 320 | Narrow overflow check |
+| `catalog-1440.png` | 1440 | Partner header, Melting Mask `$12.00`, ± Add |
+| `catalog-390.png` | 390 | Mobile catalog + store strip |
+| `catalog-320-overflow.png` | 320 | No horizontal overflow (`overflowX=false`) |
+| `cart-1440.png` / `cart-390.png` | 1440 / 390 | Store + Melting Mask line |
+| `orders-1440.png` | 1440 | `DB-MVG7294C` `refunded` (pre-filter deploy) |
+| `public-programs-1440.png` | 1440 | Approval copy, no `$12` |
+| `public-kits-1440.png` | narrow capture of programs alias | Approval language |
 
-*(Paths filled when captures land; do not treat pre-UX local `verify-*.png` as this commit.)*
-
-## 4. Latest commit and Preview
-
-| Field | Value |
-| --- | --- |
-| Feature commit (UX) | *(post-push)* |
-| Preview deploy id | *(post-deploy)* |
-| Alias matches HEAD? | *(verify via Vercel / HTML comment or build)* |
-
-## 5. Scenario acceptance (Phase 3)
+## 4. Scenario results (Phase 3)
 
 | # | Scenario | Result |
 | --- | --- | --- |
-| 1 | Tier 1 find → add → change qty → cart | Pending Preview walk |
-| 2 | Reorder from history; stop before pay | Pending |
-| 3 | View partial/full refund order copy | Pending (no new refunds) |
-| 4 | Mobile same path | Pending |
-| 5 | Logged-out public; no pro price leak | Pending |
-| 6 | Multi-store / pending / no price | Local unit + code paths; hosted XB |
+| 1 | Tier 1 find → add → qty → cart | **Pass** — `$12.00`, Added 2, Cart (2), line money |
+| 2 | Reorder; stop before pay | **Pass** — cart + Checkout visible, not clicked |
+| 3 | Refunded order UI | **Pass** — `refunded` / `unfulfilled` on `DB-MVG7294C` |
+| 4 | Mobile select + cart | **Pass** — 390 screenshots; hamburger partner nav |
+| 5 | Logged-out public no pro $ | **Pass** — programs approval copy; no `$12` (fresh cookie clear kept Vercel SSO) |
+| 6 | Multi-store / pending / no price | **Partial** — unit fixtures for no-price/OOS; multi-store UI auto-select coded; hosted multi-identity **XB** |
 
-## 6. Tests
+## 5. Tests
 
-- `npm test`: 82 passed (includes replenishment state fixtures)
-- `npm run lint`: clean
-- `npm run build`: success (includes `/partner/account`)
+- `npm test`: 82 passed  
+- `npm run lint`: clean  
+- `npm run build`: success (pre-push of `18c6372`)
 
-## 7. Incomplete / priority
+## 6. Incomplete / priority
 
-1. **P0** Confirm Preview deploy SHA == HEAD; finish Playwright matrix rows IU→IV  
-2. **P1** Hosted multi-store identity (XB)  
-3. **P1** Stripe Tax registration (XB)  
-4. **P2** Zoho OAuth (XB) — field map ready  
-5. **P3** Deferred backlog B07/B08/B12/B13
+1. **P1** Hosted multi-store / unauthorized identity (**XB**)  
+2. **P1** Stripe Tax registration (**XB**)  
+3. **P2** Zoho OAuth (**XB**) — field map ready  
+4. **P3** Footer session-aware Login link (B18)  
+5. **P3** Staging SKU public detail 404 (B17)
 
-## 8. Zoho
+## 7. Zoho
 
-- Done: `docs/ZOHO_FIELD_MAP.md`, existing mapping modules, local tests  
-- Not done: live sync, Commerce catalog switch, Books posting  
-- Dependency: Preview `ZOHO_*` credentials; keep `CATALOG_SOURCE=supabase_cache`
+- Done: `docs/ZOHO_FIELD_MAP.md`, mapping modules, local tests  
+- Not done: live CRM/Commerce/Books  
+- Dependency: `ZOHO_*` on Preview; keep `CATALOG_SOURCE=supabase_cache`
 
-## 9. Check first tomorrow (3)
+## 8. Check first tomorrow (3)
 
-1. Preview `/partner/catalog` — partner header only, Melting Mask `$12.00`, ± Add  
-2. `/cart` — store label, qty save, checkout still locked while dirty  
-3. `/partner/orders` — badges + “Add again at current price” (stop before Stripe)
+1. Preview `/partner/catalog` — partner header, `$12.00`, ± Add  
+2. `/cart` — qty persist after reload  
+3. `/partner/orders` — paid/refunded first; failed hidden unless `?showFailed=1`
 
 ## Prior night (preserved)
 
-Refunds on `DB-MVG7294C` ($5 + $12 → `refunded_cents=1700`) — **do not repeat**.  
-Grants + authorized price fix remain in force.
+Refunds on `DB-MVG7294C` ($5 + $12 → `refunded_cents=1700`) — do not repeat.  
+Grants + `authorizedPriceLabel` remain in force.
