@@ -129,7 +129,7 @@ export function CartEditor({
 
   if (items.length === 0) {
     return (
-      <div className="mt-10 space-y-4">
+      <div className="mt-8 space-y-4">
         {error && <p className="text-sm text-accent-tac" role="alert">{error}</p>}
         <p className="text-muted">
           {canCheckout
@@ -141,64 +141,101 @@ export function CartEditor({
   }
 
   return (
-    <div className="mt-10 space-y-6">
-      {items.map((line) => (
-        <div key={line.productId} className="flex flex-col gap-3 border-b border-sand-200 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-serif text-xl text-ink">{line.name}</p>
-            <p className="text-sm text-muted">{line.sku}</p>
-            <p className="text-sm text-stone-deep">
-              {line.unitPriceCents != null ? formatMoney(line.unitPriceCents) : "Authorized price is not available for the selected store."}
-            </p>
-            {line.unitPriceCents != null && (
-              <p className="text-sm text-stone-deep">Line {formatMoney(line.unitPriceCents * line.quantity)}</p>
-            )}
-            {line.outOfStock && <p className="text-sm text-accent-tac">Currently unavailable.</p>}
+    <div className="mt-8 space-y-6">
+      <div className="border-t border-sand-200">
+        {items.map((line) => (
+          <div
+            key={line.productId}
+            className="grid gap-3 border-b border-sand-200 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+          >
+            <div className="min-w-0">
+              <p className="break-words font-serif text-xl text-ink">{line.name}</p>
+              <p className="break-all text-sm text-muted">{line.sku}</p>
+              <p className="mt-1 text-sm text-stone-deep">
+                {line.unitPriceCents != null
+                  ? `${formatMoney(line.unitPriceCents)} each`
+                  : "Authorized price is not available for the selected store."}
+              </p>
+              {line.unitPriceCents != null ? (
+                <p className="text-sm text-stone-deep">Line {formatMoney(line.unitPriceCents * line.quantity)}</p>
+              ) : null}
+              {line.outOfStock ? <p className="text-sm text-accent-tac">Currently unavailable.</p> : null}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="min-h-10 min-w-10 border border-sand-200 disabled:opacity-50"
+                aria-label={`Decrease quantity for ${line.name}`}
+                onClick={() => changeQuantity(line.productId, line.quantity - 1)}
+              >
+                -
+              </button>
+              <span className="min-w-8 text-center" aria-live="polite">
+                {line.quantity}
+              </span>
+              <button
+                type="button"
+                className="min-h-10 min-w-10 border border-sand-200 disabled:opacity-50"
+                aria-label={`Increase quantity for ${line.name}`}
+                disabled={line.quantity >= 99}
+                onClick={() => changeQuantity(line.productId, line.quantity + 1)}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className="ml-2 text-sm underline underline-offset-4"
+                onClick={() => changeQuantity(line.productId, 0)}
+              >
+                Remove
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="border border-sand-200 px-3 py-1 disabled:opacity-50"
-              aria-label="Decrease quantity"
-              onClick={() => changeQuantity(line.productId, line.quantity - 1)}
-            >
-              -
-            </button>
-            <span aria-live="polite">{line.quantity}</span>
-            <button
-              type="button"
-              className="border border-sand-200 px-3 py-1 disabled:opacity-50"
-              aria-label="Increase quantity"
-              disabled={line.quantity >= 99}
-              onClick={() => changeQuantity(line.productId, line.quantity + 1)}
-            >
-              +
-            </button>
-            <button type="button" className="text-sm underline" onClick={() => changeQuantity(line.productId, 0)}>
-              Remove
-            </button>
-          </div>
-        </div>
-      ))}
-      <div className="space-y-2 text-sm text-stone-deep">
-        <p>Merchandise {missingPrice ? "incomplete" : formatMoney(subtotal)}</p>
-        <p>Shipping {formatPendingMoney(null, true)}</p>
-        <p>Tax {formatPendingMoney(null, true)}</p>
-        <p>Total {formatPendingMoney(null, true)}</p>
-        {saving || dirty ? <p>Saving quantity… Checkout stays locked until the cart is saved.</p> : null}
+        ))}
       </div>
+
+      <div className="space-y-2 border border-sand-200 bg-white p-4 text-sm text-stone-deep">
+        <div className="flex justify-between gap-4">
+          <span>Merchandise</span>
+          <span>{missingPrice ? "incomplete" : formatMoney(subtotal)}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span>Shipping</span>
+          <span>{formatPendingMoney(null, true)}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span>Tax</span>
+          <span>{formatPendingMoney(null, true)}</span>
+        </div>
+        <div className="flex justify-between gap-4 border-t border-sand-200 pt-2 font-medium">
+          <span>Amount due at checkout</span>
+          <span>{formatPendingMoney(null, true)}</span>
+        </div>
+        {saving || dirty ? (
+          <p className="text-muted">Saving quantity… Checkout stays locked until the cart is saved.</p>
+        ) : (
+          <p className="text-muted">Shipping and tax are calculated in Stripe Checkout, never assumed as free.</p>
+        )}
+      </div>
+
       {error && <p className="text-sm text-accent-tac" role="alert">{error}</p>}
       {checkoutState.error && <p className="text-sm text-accent-tac" role="alert">{checkoutState.error}</p>}
-      {missingPrice && <p className="text-sm text-muted">Checkout stays locked until every item has an authorized store price.</p>}
+      {missingPrice && (
+        <p className="text-sm text-muted">Checkout stays locked until every item has an authorized store price.</p>
+      )}
       {outOfStock && <p className="text-sm text-muted">Remove unavailable items before checkout.</p>}
       {!canCheckout ? (
-        <a href="/partner/login" className="inline-block bg-charcoal px-6 py-3 text-sm text-cream">Sign in with an approved account</a>
+        <a href="/partner/login" className="inline-block bg-charcoal px-6 py-3 text-sm text-cream">
+          Sign in with an approved account
+        </a>
       ) : !checkoutReady ? (
-        <p className="text-sm text-muted">Checkout stays locked until Stripe tax and a shipping rate are configured. Unknown shipping or tax is never treated as free.</p>
+        <p className="text-sm text-muted">
+          Checkout stays locked until Stripe tax and a shipping rate are configured.
+        </p>
       ) : (
         <form action={checkoutAction}>
           <button
-            className="bg-charcoal px-6 py-3 text-sm text-cream disabled:opacity-60"
+            className="min-h-11 bg-charcoal px-6 py-3 text-sm text-cream disabled:opacity-60"
             disabled={checkoutLocked || checkoutPending}
           >
             {checkoutPending ? "Opening secure checkout…" : "Checkout"}

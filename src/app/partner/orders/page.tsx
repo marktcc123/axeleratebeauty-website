@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LocationSelect } from "@/components/commerce/LocationSelect";
 import { ReorderButton } from "@/components/commerce/ReorderButton";
-import { PageIntro } from "@/components/site/PageIntro";
+import { StatusBadge } from "@/components/commerce/StatusBadge";
 import { CatalogError, getAuthorizedProductsByIds } from "@/lib/catalog";
 import { formatMoney, formatPendingMoney } from "@/lib/commerce/guards";
 import { classifyOrderList, PARTNER_ORDERS_SELECT } from "@/lib/commerce/order-access";
@@ -68,13 +67,20 @@ export default async function OrdersPage() {
   }
 
   const visible = classified.orders.filter((order) => !order.location_id || locationIds.includes(order.location_id));
-  const productIds = [...new Set(visible.flatMap((order) => (order.order_items ?? []).map((item) => item.product_id).filter((id): id is string => Boolean(id))))];
+  const productIds = [
+    ...new Set(
+      visible.flatMap((order) => (order.order_items ?? []).map((item) => item.product_id).filter((id): id is string => Boolean(id))),
+    ),
+  ];
   let reorderById = new Map<string, { slug: string; reorderEligible: boolean }>();
   try {
     const catalog = await getAuthorizedProductsByIds(productIds, session);
     reorderById = new Map(
       catalog
-        .filter((product) => product.publicationStatus === "active" && product.reorderEligible && product.professionalPriceCents != null)
+        .filter(
+          (product) =>
+            product.publicationStatus === "active" && product.reorderEligible && product.professionalPriceCents != null,
+        )
         .map((product) => [product.id, { slug: product.slug, reorderEligible: product.reorderEligible }]),
     );
   } catch (error) {
@@ -85,52 +91,103 @@ export default async function OrdersPage() {
     });
   }
 
+  const storeName = (locationId: string | null) => {
+    if (!locationId) return "Store not recorded";
+    const location = session.locations.find((entry) => entry.id === locationId);
+    if (!location) return "Unauthorized or unknown store";
+    return `${location.name}${location.city ? ` · ${location.city}` : ""}`;
+  };
+
   return (
-    <section className="bg-cream px-5 py-24 sm:px-8">
+    <section className="bg-cream px-5 py-10 sm:px-8 sm:py-14">
       <div className="mx-auto max-w-6xl">
-        <PageIntro eyebrow="Orders" title="Your business order history." />
-        <div className="mt-6">
-          <LocationSelect locations={session.locations} activeLocationId={session.activeLocationId} />
-        </div>
+        <header className="max-w-3xl">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Orders</p>
+          <h1 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">Order history</h1>
+          <p className="mt-3 text-sm text-muted sm:text-base">
+            Payment and refund status come from confirmed events. Reorder uses today&apos;s authorized price, not the historical line price.
+          </p>
+        </header>
+
         {classified.status === "error" ? (
-          <p className="mt-10 text-sm text-accent-tac" role="alert">Orders could not be loaded. Try again in a moment.</p>
+          <p className="mt-10 text-sm text-accent-tac" role="alert">
+            Orders could not be loaded. Try again in a moment.
+          </p>
         ) : classified.status === "empty" || visible.length === 0 ? (
           <p className="mt-10 text-muted">No orders yet. Paid orders appear here after payment is confirmed.</p>
         ) : (
-          <div className="mt-10 space-y-6 overflow-x-auto">
+          <div className="mt-8 space-y-4">
             {visible.map((order) => (
-              <article key={order.id} className="min-w-[20rem] border border-sand-200 bg-white p-6">
-                <div className="flex flex-wrap justify-between gap-3">
-                  <p className="font-serif text-2xl text-ink">{order.order_number}</p>
-                  <p className="text-sm text-muted">{new Date(order.created_at).toLocaleDateString()}</p>
+              <article key={order.id} className="border border-sand-200 bg-white p-5 sm:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-all font-serif text-2xl text-ink">{order.order_number}</p>
+                    <p className="mt-1 text-sm text-muted">
+                      {new Date(order.created_at).toLocaleDateString()} · {storeName(order.location_id)}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <StatusBadge value={order.payment_status} />
+                    <StatusBadge value={order.fulfillment_status} />
+                  </div>
                 </div>
-                <p className="mt-2 text-sm text-muted">
-                  {order.order_kind === "contract_installment" ? "Contract payment" : "Replenishment order"} · {order.payment_status} · {order.fulfillment_status}
+
+                <p className="mt-3 text-sm text-muted">
+                  {order.order_kind === "contract_installment" ? "Contract payment" : "Replenishment"}
                 </p>
-                <p className="mt-1 text-sm text-muted">
-                  Merchandise {formatMoney(order.subtotal_cents)} · Shipping {formatPendingMoney(order.shipping_cents, Boolean(order.shipping_pending))} · Tax {formatPendingMoney(order.tax_cents, Boolean(order.tax_pending))}
-                </p>
-                {order.tracking_number && <p className="mt-1 text-sm">Tracking: {order.tracking_number}</p>}
-                <ul className="mt-4 space-y-1 text-sm text-muted">
-                  {(order.order_items ?? []).map((item) => (
-                    <li key={`${order.id}-${item.sku}-${item.product_id ?? "snapshot"}`}>
-                      {item.name} · {item.quantity} · {item.sku}
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-4 flex flex-wrap gap-3">
+
+                <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
+                  <div>
+                    <dt className="text-muted">Merchandise</dt>
+                    <dd className="text-stone-deep">{formatMoney(order.subtotal_cents)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted">Shipping</dt>
+                    <dd className="text-stone-deep">
+                      {formatPendingMoney(order.shipping_cents, Boolean(order.shipping_pending))}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted">Tax</dt>
+                    <dd className="text-stone-deep">
+                      {formatPendingMoney(order.tax_cents, Boolean(order.tax_pending))}
+                    </dd>
+                  </div>
+                </dl>
+
+                {order.tracking_number ? (
+                  <p className="mt-3 break-all text-sm">Tracking: {order.tracking_number}</p>
+                ) : null}
+
+                <ul className="mt-4 space-y-2 border-t border-sand-200 pt-4 text-sm">
                   {(order.order_items ?? []).map((item) => {
                     const reorder = item.product_id ? reorderById.get(item.product_id) : null;
-                    if (!reorder || order.order_kind === "contract_installment" || !item.product_id) return null;
-                    return <ReorderButton key={`${order.id}-${item.product_id}`} productId={item.product_id} />;
+                    return (
+                      <li
+                        key={`${order.id}-${item.sku}-${item.product_id ?? "snapshot"}`}
+                        className="flex flex-wrap items-baseline justify-between gap-2"
+                      >
+                        <span className="min-w-0 text-stone-deep">
+                          <span className="break-words">{item.name}</span>
+                          <span className="text-muted">
+                            {" "}
+                            · {item.quantity} · {item.sku} · was {formatMoney(item.unit_price_cents)}
+                          </span>
+                        </span>
+                        {reorder && order.order_kind !== "contract_installment" && item.product_id ? (
+                          <ReorderButton productId={item.product_id} />
+                        ) : null}
+                      </li>
+                    );
                   })}
-                </div>
+                </ul>
               </article>
             ))}
           </div>
         )}
+
         <Link href="/partner/catalog" className="mt-8 inline-block text-sm underline-offset-4 hover:underline">
-          Browse replenishment catalog
+          Back to catalog
         </Link>
       </div>
     </section>

@@ -14,21 +14,21 @@ export default function ForProfessionalsPage() {
       <div className="mx-auto max-w-3xl">
         <PageIntro eyebrow="For Professionals" title="A professional purchasing path, not a consumer store.">
           <p>
-            Dermabell Professional is designed for beauty businesses. After you register,
-            an administrator reviews the account. Approved buyers may later view authorized
-            prices and purchase published programs. Pending accounts cannot bypass verification,
-            and no prices are shown until separately approved.
+            Dermabell Professional is for beauty businesses. Public pages explain programs and
+            partnership. Authorized prices appear only after an administrator approves your
+            account and assigns a store. Pending accounts cannot buy or see partner dollars.
           </p>
         </PageIntro>
         <ol className="mt-12 space-y-4 text-muted">
-          <li>1. Discover the four Professional Facial Programs.</li>
-          <li>2. Request professional access with a business account.</li>
-          <li>3. Submit business verification details.</li>
-          <li>4. Wait for approval.</li>
-          <li>5. View authorized prices only after they are separately approved.</li>
+          <li>1. Review Professional Programs and Real Partners on the public site.</li>
+          <li>2. Request access with a business account (or log in if you already registered).</li>
+          <li>3. Wait for verification and store assignment.</li>
+          <li>4. After approval, open Catalog to reorder at your store&apos;s price.</li>
+          <li>5. Use Orders to track payment or refund status and buy again at today&apos;s price.</li>
         </ol>
         <div className="mt-10 flex flex-wrap gap-4">
           <Link href="/partner/register" className="bg-charcoal px-6 py-3 text-sm text-cream">Request Professional Access</Link>
+          <Link href="/partner/login" className="border border-charcoal px-6 py-3 text-sm text-charcoal">Professional Login</Link>
           <Link href="/professional-programs" className="text-sm underline-offset-4 hover:underline">Browse Professional Programs</Link>
         </div>
       </div>

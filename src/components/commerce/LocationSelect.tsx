@@ -26,12 +26,7 @@ export function LocationSelect({
   }
 
   return (
-    <form
-      className="grid gap-2 sm:max-w-md"
-      action={async (formData) => {
-        await selectActiveLocation(String(formData.get("locationId") ?? ""));
-      }}
-    >
+    <form className="sm:max-w-md">
       <label htmlFor="active-location" className="text-sm text-muted">
         Ordering store
         <select
@@ -39,6 +34,11 @@ export function LocationSelect({
           name="locationId"
           defaultValue={activeLocationId ?? locations[0].id}
           className="mt-1 w-full border border-sand-200 bg-white px-3 py-2"
+          onChange={async (event) => {
+            const formData = new FormData();
+            formData.set("locationId", event.target.value);
+            await selectActiveLocation(String(formData.get("locationId") ?? ""));
+          }}
         >
           {locations.map((location) => (
             <option key={location.id} value={location.id}>
@@ -49,7 +49,6 @@ export function LocationSelect({
           ))}
         </select>
       </label>
-      <button className="justify-self-start text-sm underline-offset-4 hover:underline">Use this store</button>
     </form>
   );
 }

@@ -3,6 +3,7 @@ export const AUTH_NEXT_ALLOWLIST = [
   "/partner/dashboard",
   "/partner/catalog",
   "/partner/orders",
+  "/partner/account",
   "/partner/billing",
   "/partner/profile",
   "/partner/support",

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PartnerNav } from "@/components/commerce/PartnerNav";
+import { PartnerChrome } from "@/components/commerce/PartnerChrome";
 import { getSession } from "@/lib/session";
 
 export const metadata: Metadata = {
@@ -8,9 +8,10 @@ export const metadata: Metadata = {
 
 export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
+
   return (
     <>
-      <PartnerNav session={session} />
+      <PartnerChrome session={session} />
       {children}
     </>
   );
