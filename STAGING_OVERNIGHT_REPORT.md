@@ -15,10 +15,11 @@ Evidence: `docs/ux-evidence/`
 | Item | Value |
 | --- | --- |
 | Feature UX commit | `18c6372f6c1e581eb9b22a217f43eebbc6c73bce` |
-| Follow-up (orders filter + evidence) | *(this docs commit — see git log)* |
+| HEAD (orders filter + evidence) | `893d6d7697221120a0ca4b563ca413a92db845f6` |
 | Preview deploy for `18c6372` | `dpl_9z1iiHVUGHe4LkTMrNsEvDpjFWVR` → `https://axeleratebeauty-website-8w4o7gns4-axelerateglobal.vercel.app` |
-| Alias | fixed Preview URL above (tracks branch) |
-| Prior report lag | Old report pinned `0f63089` while HEAD had moved to `22efa1d`. Corrected: browser acceptance below ran on alias after `18c6372` Ready. |
+| Preview deploy for `893d6d7` | `dpl_ifH2X9oZ1oJCmLRkVSks9EEv2YV2` → `https://axeleratebeauty-website-ezq6c4y6c-axelerateglobal.vercel.app` |
+| Alias | fixed Preview URL above |
+| Prior report lag | Old report pinned `0f63089` while HEAD had moved to `22efa1d`. Corrected after UX deploys. |
 | Refund tests | **Not repeated** (`DB-MVG7294C` already covered) |
 
 ## Acceptance matrix
@@ -60,7 +61,7 @@ Legend: **IV** implemented & verified · **IU** implemented, not verified on lat
 | Catalog ± steppers | IV | Playwright +1 then Add → Cart (2) |
 | Cart store + pending ship/tax + save lock | IV | Snapshot + qty persist |
 | Orders badges + reorder CTA | IV | refunded/paid/failed badges |
-| Hide failed checkout noise | IU→IV after follow-up deploy | Default hide; `?showFailed=1` |
+| Hide failed checkout noise | IV | Alias after `893d6d7`: “24 failed… hidden”; first row `DB-MVG7294C` refunded |
 | Empty / no-price / OOS fixtures | IV | Unit tests `replenishment-row-state` |
 | Desktop 1440 / mobile 390 / 320 overflow | IV | Screenshots; 320 `overflowX=false` |
 | Second friction pass | IV | Orders failed-noise filter shipped |
@@ -97,9 +98,10 @@ Legend: **IV** implemented & verified · **IU** implemented, not verified on lat
 | `catalog-390.png` | 390 | Mobile catalog + store strip |
 | `catalog-320-overflow.png` | 320 | No horizontal overflow (`overflowX=false`) |
 | `cart-1440.png` / `cart-390.png` | 1440 / 390 | Store + Melting Mask line |
-| `orders-1440.png` | 1440 | `DB-MVG7294C` `refunded` (pre-filter deploy) |
+| `orders-1440.png` | 1440 | Pre-filter history (includes noise era) |
+| `orders-filtered-1440.png` | 1440 | After `893d6d7`: failed hidden; refunded first |
 | `public-programs-1440.png` | 1440 | Approval copy, no `$12` |
-| `public-kits-1440.png` | narrow capture of programs alias | Approval language |
+| `public-kits-1440.png` | narrow capture | Approval language |
 
 ## 4. Scenario results (Phase 3)
 
