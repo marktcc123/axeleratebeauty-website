@@ -95,7 +95,7 @@ Rules:
 | --- | --- | --- |
 | Long name / no image / OOS / cart density | 通过 (simulated only) | Prior `v2-fixtures-*-SIMULATED` |
 
-## Purchase flow (Preview `5d03742`)
+## Purchase flow (Preview `5d03742` — pre self-serve)
 
 | Step | Status |
 | --- | --- |
@@ -105,13 +105,28 @@ Rules:
 | Multi-store / cross-company | 外部阻塞 |
 | New pay/refund | 未执行（边界） |
 
+## Self-serve Tier 3 (this increment)
+
+| Path | Local / unit | Hosted Preview |
+| --- | --- | --- |
+| A. New independent → email verify → Tier 3 → price → cart | 通过 (unit: `purchase-eligibility`; register insert defaults in code) | **外部阻塞** — no approved hosted test signup / migration apply |
+| B. Existing chain Tier 1 retained + orders | 通过 (no-downgrade unit + existing Preview Tier 1 login path prior) | 未验证 on new SHA until Preview redeploy |
+| Privilege forgery (tier/role/org/admin ignored) | 通过 (register ignores client fields; unit defaults) | 外部阻塞 |
+| Typed chain name ≠ Belle/Brow Arc bind | 通过 (`commercial_model: null` on self-serve insert) | 外部阻塞 |
+| Suspended still blocked | 通过 (unit + guards) | 未验证 |
+| Invite join unchanged | 通过 (code path: invite skips self-serve insert) | 未验证 |
+| Nav Shop / Orders / Account + cart icon | 本地代码完成 | 未验证 (await Preview) |
+| 1440 / 390 / 320 layout after copy change | 未验证 | 未验证 |
+
 ## Content / migration readiness
 
 | Item | Path / status |
 | --- | --- |
 | Content model | `docs/PRODUCT_CONTENT_MODEL.md` |
 | Melting Mask 70 gaps | `docs/MELTING_MASK_70_CONTENT_CHECKLIST.md` |
-| Migration (unapplied) | `supabase/migrations/20261021_product_display_fields.sql` |
+| Display fields migration (unapplied) | `supabase/migrations/20261021_product_display_fields.sql` |
+| Self-serve defaults migration (unapplied, docs-only) | `supabase/migrations/20261022_self_serve_tier3_defaults.sql` |
+| Pending account ops list | `docs/PENDING_ACCOUNT_ACTIVATION.md` |
 | Formal content complete | **否** |
 
 ## External blocks
@@ -121,9 +136,13 @@ Rules:
 3. Zoho Commerce credentials  
 4. Multi-store + cross-company test identities  
 5. Stripe Tax registrations  
+6. Hosted Tier 3 signup verification (blocked until ops allows test account / email confirm on Preview)  
+7. Do **not** batch-activate historical pending orgs without ops review  
 
-## Check first tomorrow
+## Check first after Preview deploy
 
-1. `/partner/orders` — refunded order net paid  
-2. `/partner/catalog` → detail → cart qty persist  
-3. `docs/MELTING_MASK_70_CONTENT_CHECKLIST.md` — what you still need to supply  
+1. Partner nav: Shop / Orders / Account + cart badge  
+2. Existing Tier 1 login still shows $12 Melting Mask path  
+3. New register message + server defaults (when test account allowed)  
+4. Orders “View order” collapse + Buy again  
+

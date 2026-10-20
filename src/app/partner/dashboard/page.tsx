@@ -16,36 +16,46 @@ export default async function DashboardPage() {
   return (
     <section className="bg-cream px-5 py-10 sm:px-8 sm:py-14">
       <div className="mx-auto max-w-3xl">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Account status</p>
-        <h1 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">Welcome to Dermabell Professional</h1>
-        <p className="mt-4 text-muted">
-          Status: <strong>{status}</strong>
-          {session.organizationName ? ` · ${session.organizationName}` : ""}
-        </p>
-        {status === "pending" && (
+        <h1 className="font-serif text-3xl text-ink sm:text-4xl">Welcome</h1>
+        {session.organizationName ? (
+          <p className="mt-2 text-muted">{session.organizationName}</p>
+        ) : null}
+
+        {!session.emailVerified ? (
           <p className="mt-4 text-sm text-muted">
-            Purchasing stays locked until verification is approved. Explore Professional Programs or request a Full Salon System consultation while you wait.
+            Confirm your email to unlock shopping at your business price. Check your inbox for the confirmation link.
           </p>
-        )}
-        {status === "suspended" && (
+        ) : null}
+
+        {session.emailVerified && status === "pending" ? (
           <p className="mt-4 text-sm text-muted">
-            This account is paused. Use Account → Support if you need help restoring access.
+            This account still needs access before shopping. Typing a company name does not join an existing group —
+            use an invitation if you were asked to join a headquarters. Contact support if you expected to shop already.
           </p>
-        )}
-        {status === "approved" && session.locations.length === 0 && (
+        ) : null}
+
+        {status === "suspended" ? (
           <p className="mt-4 text-sm text-muted">
-            Your account is approved, but no store is linked yet. Ask an administrator to assign a store before ordering.
+            Purchasing is paused on this account. Open Account → Support if you need help.
           </p>
-        )}
+        ) : null}
+
+        {status === "approved" && session.emailVerified && session.locations.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">
+            Your business is ready, but no shipping location is linked yet. Ask your administrator for access, or contact
+            support.
+          </p>
+        ) : null}
+
         <div className="mt-8 flex flex-col gap-3 text-sm">
+          <Link href="/partner/account" className="underline-offset-4 hover:underline">
+            Account
+          </Link>
           <Link href="/professional-programs" className="underline-offset-4 hover:underline">
-            Browse Professional Programs
+            Browse Programs
           </Link>
           <Link href="/store-evaluation" className="underline-offset-4 hover:underline">
             Request a Full Salon System consultation
-          </Link>
-          <Link href="/partner/account" className="underline-offset-4 hover:underline">
-            Open account
           </Link>
         </div>
       </div>

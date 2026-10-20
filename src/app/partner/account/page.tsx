@@ -6,6 +6,26 @@ import { formatMoney } from "@/lib/commerce/guards";
 import { getSession } from "@/lib/session";
 import { createServerSupabase } from "@/lib/supabase/server";
 
+function accountAccessCopy(input: {
+  emailVerified: boolean;
+  verificationStatus: string | null;
+  locationCount: number;
+}) {
+  if (!input.emailVerified) {
+    return "Confirm your email to shop at your business price.";
+  }
+  if (input.verificationStatus === "suspended") {
+    return "Purchasing is paused on this account. Use Support below if you need help.";
+  }
+  if (input.verificationStatus === "pending" || input.verificationStatus === "rejected") {
+    return "This account does not have shopping access yet. Contact support if you expected to order already.";
+  }
+  if (input.locationCount === 0) {
+    return "A shipping location is required before you can shop.";
+  }
+  return "You can shop published products at your business price.";
+}
+
 export default async function AccountPage({
   searchParams,
 }: {
@@ -34,18 +54,22 @@ export default async function AccountPage({
   const visible = (orders ?? []).filter((order) => !order.location_id || allowed.has(order.location_id));
   const replenishment = visible.filter((order) => order.order_kind !== "contract_installment");
   const installments = visible.filter((order) => order.order_kind === "contract_installment");
+  const accessCopy = accountAccessCopy({
+    emailVerified: session.emailVerified,
+    verificationStatus: organization?.verification_status ?? session.verificationStatus,
+    locationCount: session.locations.length,
+  });
 
   return (
     <CommercePage narrow>
         <CommerceHeader
-          eyebrow="Account"
-          title={organization?.name ?? "Business account"}
-          description="Your profile, recent payments, and support requests."
+          title={organization?.name ?? "Your business"}
+          description="Company details, recent payments, and support."
         />
 
         <nav aria-label="Account sections" className="mt-6 flex flex-wrap gap-4 text-sm">
           <a href="#profile" className={focus === "profile" ? "font-medium text-ink" : "text-muted underline-offset-4 hover:underline"}>
-            Profile
+            Business
           </a>
           <a href="#billing" className={focus === "billing" ? "font-medium text-ink" : "text-muted underline-offset-4 hover:underline"}>
             Billing
@@ -56,43 +80,52 @@ export default async function AccountPage({
         </nav>
 
         <section id="profile" className="mt-10 scroll-mt-24 border-t border-sand-200 pt-8">
-          <h2 className="font-serif text-2xl text-ink">Profile</h2>
+          <h2 className="font-serif text-2xl text-ink">Business</h2>
+          <p className="mt-3 text-sm text-muted">{accessCopy}</p>
           <dl className="mt-6 space-y-4 text-sm">
             <div>
-              <dt className="text-muted">Status</dt>
-              <dd className="text-stone-deep">{organization?.verification_status ?? session.verificationStatus}</dd>
-            </div>
-            <div>
-              <dt className="text-muted">Email</dt>
+              <dt className="text-muted">Contact email</dt>
               <dd className="break-all text-stone-deep">{session.email}</dd>
             </div>
-            <div>
-              <dt className="text-muted">Phone</dt>
-              <dd className="text-stone-deep">{organization?.phone ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted">Address</dt>
-              <dd className="text-stone-deep">
-                {[organization?.address_line1, organization?.city, organization?.state, organization?.postal_code]
-                  .filter(Boolean)
-                  .join(", ") || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted">Authorized stores</dt>
-              <dd className="text-stone-deep">
-                {session.locations.length
-                  ? session.locations
-                      .map((location) =>
-                        `${location.name}${location.city ? ` · ${location.city}` : ""}${location.state ? `, ${location.state}` : ""}`,
-                      )
-                      .join("; ")
-                  : "None linked yet"}
-              </dd>
-            </div>
+            {session.fullName ? (
+              <div>
+                <dt className="text-muted">Contact name</dt>
+                <dd className="text-stone-deep">{session.fullName}</dd>
+              </div>
+            ) : null}
+            {organization?.phone ? (
+              <div>
+                <dt className="text-muted">Phone</dt>
+                <dd className="text-stone-deep">{organization.phone}</dd>
+              </div>
+            ) : null}
+            {(organization?.address_line1 || organization?.city) ? (
+              <div>
+                <dt className="text-muted">Business address</dt>
+                <dd className="text-stone-deep">
+                  {[organization?.address_line1, organization?.city, organization?.state, organization?.postal_code]
+                    .filter(Boolean)
+                    .join(", ")}
+                </dd>
+              </div>
+            ) : null}
+            {session.locations.length > 0 ? (
+              <div>
+                <dt className="text-muted">
+                  {session.locations.length === 1 ? "Shipping address" : "Shipping locations"}
+                </dt>
+                <dd className="text-stone-deep">
+                  {session.locations
+                    .map((location) =>
+                      `${location.name}${location.city ? ` · ${location.city}` : ""}${location.state ? `, ${location.state}` : ""}`,
+                    )
+                    .join("; ")}
+                </dd>
+              </div>
+            ) : null}
           </dl>
           <p className="mt-6 text-sm text-muted">
-            To update verification documents, email sales@axeleratebeauty.com. Uploads stay private.
+            To update company records, email sales@axeleratebeauty.com.
           </p>
         </section>
 
@@ -102,9 +135,9 @@ export default async function AccountPage({
             Recent payments only. Opening a confirmation page does not prove payment succeeded.
           </p>
           <div className="mt-6">
-            <h3 className="text-sm uppercase tracking-[0.14em] text-muted">Replenishment</h3>
+            <h3 className="text-sm uppercase tracking-[0.14em] text-muted">Product orders</h3>
             {!replenishment.length ? (
-              <p className="mt-3 text-sm text-muted">No replenishment payments yet.</p>
+              <p className="mt-3 text-sm text-muted">No product payments yet.</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {replenishment.map((order) => (
@@ -116,12 +149,10 @@ export default async function AccountPage({
               </ul>
             )}
           </div>
-          <div className="mt-8">
-            <h3 className="text-sm uppercase tracking-[0.14em] text-muted">Contract installments</h3>
-            <p className="mt-2 text-sm text-muted">Scheduled contract payments stay on the original agreement.</p>
-            {!installments.length ? (
-              <p className="mt-3 text-sm text-muted">No installment payments on file.</p>
-            ) : (
+          {installments.length > 0 ? (
+            <div className="mt-8">
+              <h3 className="text-sm uppercase tracking-[0.14em] text-muted">Contract installments</h3>
+              <p className="mt-2 text-sm text-muted">Scheduled contract payments stay on the original agreement.</p>
               <ul className="mt-3 space-y-2">
                 {installments.map((order) => (
                   <li key={order.id} className="border border-sand-200 bg-white px-4 py-3 text-sm">
@@ -130,8 +161,8 @@ export default async function AccountPage({
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
+            </div>
+          ) : null}
           <Link href="/partner/orders" className="mt-6 inline-block text-sm underline-offset-4 hover:underline">
             Open full order history
           </Link>
@@ -140,7 +171,7 @@ export default async function AccountPage({
         <section id="support" className="mt-12 scroll-mt-24 border-t border-sand-200 pt-8">
           <h2 className="font-serif text-2xl text-ink">Support</h2>
           <p className="mt-2 text-sm text-muted">
-            Cancellations, refund questions, delivery issues, or training follow-up. Saved to the sales team.
+            Cancellations, refund questions, delivery issues, or training follow-up.
           </p>
           <div className="mt-6">
             <InquiryForm

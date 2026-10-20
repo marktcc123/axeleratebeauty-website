@@ -21,6 +21,7 @@ export const DEV_PREVIEW_SESSION: SessionContext = {
   organizationId: "dev-preview-org",
   organizationName: "Preview Salon",
   verificationStatus: "approved",
+  emailVerified: true,
   orgRole: "company_admin",
   locations: [
     {

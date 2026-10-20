@@ -23,20 +23,34 @@ export class CommerceError extends Error {
 
 export function assertApprovedBuyer(input: {
   userId?: string | null;
+  organizationId?: string | null;
   verificationStatus?: string | null;
   activeLocationId?: string | null;
+  emailVerified?: boolean;
 }) {
   if (!input.userId) {
-    throw new CommerceError("Sign in with an approved business account to purchase.", "unauthenticated");
+    throw new CommerceError("Sign in to purchase.", "unauthenticated");
+  }
+  if (input.emailVerified === false) {
+    throw new CommerceError("Confirm your email before purchasing.", "unapproved");
   }
   if (input.verificationStatus === "suspended") {
-    throw new CommerceError("This business account is suspended.", "suspended");
+    throw new CommerceError("This business account is paused. Contact support for help.", "suspended");
+  }
+  if (input.verificationStatus === "pending" || input.verificationStatus === "rejected") {
+    throw new CommerceError(
+      "Purchasing is not available for this account yet. Contact support if you need access.",
+      "unapproved",
+    );
   }
   if (input.verificationStatus !== "approved") {
-    throw new CommerceError("Purchasing is available after business verification.", "unapproved");
+    throw new CommerceError("Purchasing is not available for this account.", "unapproved");
+  }
+  if (!input.organizationId) {
+    throw new CommerceError("A business profile is required before purchasing.", "unapproved");
   }
   if (!input.activeLocationId) {
-    throw new CommerceError("Select an authorized store before checkout.", "location_required");
+    throw new CommerceError("Confirm a shipping location before checkout.", "location_required");
   }
 }
 

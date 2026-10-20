@@ -56,36 +56,42 @@ export function ProductDetailView({
           {pack ? <p className="mt-2 text-sm text-stone-deep">{pack}</p> : null}
           {unit ? <p className="commerce-meta mt-1">Sold {unit}</p> : null}
 
-          <p className="commerce-price mt-6">
+          {approved ? (
+            <p className="mt-6 text-xs uppercase tracking-[0.12em] text-muted">Your price</p>
+          ) : null}
+          <p className={`commerce-price ${approved ? "mt-1" : "mt-6"}`}>
             {approved ? authorizedPriceLabel(product) : publicPriceLabel(product)}
           </p>
           {stock ? <p className="commerce-meta mt-2">{stock}</p> : null}
-
-          {product.description?.trim() ? (
-            <p className="mt-6 max-w-prose text-base leading-relaxed text-muted">{product.description.trim()}</p>
-          ) : null}
 
           <div className="mt-8">
             {approved && product.professionalPriceCents != null ? (
               <AddToCartButton productId={product.id} allowQuantity productName={product.name} />
             ) : approved ? (
               <p className="text-sm text-muted">
-                No valid price for this store. Purchasing stays locked until a tier price is assigned.
+                No valid price for this location. Purchasing stays locked until a price is assigned.
               </p>
             ) : (
               <Link href="/partner/login" className="commerce-btn inline-flex">
-                Professional login to purchase
+                Sign in to purchase
               </Link>
             )}
           </div>
 
           {backHref ? (
             <Link href={backHref} className="mt-6 inline-block text-sm underline-offset-4 hover:underline">
-              Back to catalog
+              Back to Shop
             </Link>
           ) : null}
         </div>
       </div>
+
+      {product.description?.trim() ? (
+        <details className="mt-12 border-t border-sand-200 pt-8">
+          <summary className="cursor-pointer font-serif text-xl text-ink">Product details</summary>
+          <p className="mt-3 max-w-prose text-base leading-relaxed text-muted">{product.description.trim()}</p>
+        </details>
+      ) : null}
 
       <div className="mt-16 grid gap-10 border-t border-sand-200 pt-12 md:grid-cols-2">
         {product.intendedUse?.trim() ? (

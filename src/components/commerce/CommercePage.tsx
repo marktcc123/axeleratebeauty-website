@@ -21,13 +21,13 @@ export function CommerceHeader({
   title,
   description,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description?: string;
 }) {
   return (
     <header className="commerce-header">
-      <p className="commerce-eyebrow">{eyebrow}</p>
+      {eyebrow ? <p className="commerce-eyebrow">{eyebrow}</p> : null}
       <h1 className="commerce-title text-balance">{title}</h1>
       {description ? <p className="commerce-lead">{description}</p> : null}
     </header>

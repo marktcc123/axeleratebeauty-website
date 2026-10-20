@@ -40,11 +40,38 @@ const product: Product = {
 
 describe("commerce guards", () => {
   it("blocks unapproved buyers", () => {
-    expect(() => assertApprovedBuyer({ userId: "u1", verificationStatus: "pending", activeLocationId: "loc1" })).toThrow(CommerceError);
+    expect(() =>
+      assertApprovedBuyer({
+        userId: "u1",
+        organizationId: "o1",
+        verificationStatus: "pending",
+        activeLocationId: "loc1",
+        emailVerified: true,
+      }),
+    ).toThrow(CommerceError);
   });
 
-  it("blocks checkout without an authorized store", () => {
-    expect(() => assertApprovedBuyer({ userId: "u1", verificationStatus: "approved" })).toThrow(CommerceError);
+  it("blocks checkout without a shipping location", () => {
+    expect(() =>
+      assertApprovedBuyer({
+        userId: "u1",
+        organizationId: "o1",
+        verificationStatus: "approved",
+        emailVerified: true,
+      }),
+    ).toThrow(CommerceError);
+  });
+
+  it("blocks unverified email", () => {
+    expect(() =>
+      assertApprovedBuyer({
+        userId: "u1",
+        organizationId: "o1",
+        verificationStatus: "approved",
+        activeLocationId: "loc1",
+        emailVerified: false,
+      }),
+    ).toThrow(CommerceError);
   });
 
   it("blocks draft products", () => {
@@ -64,7 +91,15 @@ describe("commerce guards", () => {
   });
 
   it("blocks suspended buyers", () => {
-    expect(() => assertApprovedBuyer({ userId: "u1", verificationStatus: "suspended", activeLocationId: "loc1" })).toThrow(CommerceError);
+    expect(() =>
+      assertApprovedBuyer({
+        userId: "u1",
+        organizationId: "o1",
+        verificationStatus: "suspended",
+        activeLocationId: "loc1",
+        emailVerified: true,
+      }),
+    ).toThrow(CommerceError);
   });
 
   it("blocks unpublished products in priced carts", () => {

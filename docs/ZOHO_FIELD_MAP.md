@@ -11,7 +11,19 @@ Status: **credentials not verified in this overnight run**. Keep `CATALOG_SOURCE
 | Zoho Books | Invoice, receipt, refund accounting (future) | Stripe payment/refund facts |
 | Supabase | Auth identity, org/store authorization, order cache, sync job rows | Stripe webhooks, Zoho sync results |
 | Stripe | PaymentIntent / Checkout Session / Refund truth | Website order linkage via IDs |
-| Website admin | Verification status, store membership, Zoho ID binding | Never invent Zoho Account by company name alone |
+| Website admin | Purchase eligibility (suspend/pending historical), store membership, Tier 1/2 upgrades, Zoho ID binding | Never invent Zoho Account by company name alone; never downgrade Tier 1/2 via sync |
+| Website self-serve signup | New independent org defaults: `approved` + `price_tier=3` | Never trust client `tier` / `role` / `organization_id` / `is_admin` |
+
+## Price tier ownership (prevent sync overwrite)
+
+| Tier | Who sets | Sync rule |
+| --- | --- | --- |
+| Tier 3 (default independent) | Website `registerBusiness` via `selfServeOrganizationInsert` | Zoho must not invent a lower tier; self-serve starts at 3 |
+| Tier 1 (Belle, Brow Arc) | Website admin after verified Zoho Account bind | Mapping must call `nextPriceTierWithoutDowngrade` — never lower 1→3 |
+| Tier 2 | Website admin (manual grant) | Same no-downgrade guard |
+| Product unit prices | Website offer rows / future Commerce price books | Explicit product prices win over formula; missing price ⇒ no purchase |
+
+Customers never see “Tier 1/2/3” labels — only “Your price” / the dollar amount.
 
 ## Commercial models (must not collapse)
 
@@ -25,7 +37,7 @@ Status: **credentials not verified in this overnight run**. Keep `CATALOG_SOURCE
 | --- | --- | --- | --- | --- |
 | HQ Zoho Account ID | Website admin after live CRM read | CRM → website mapping | Manual bind | Never overwrite with name match |
 | Store / location | Website | Website → CRM Contact/custom (future) | After approval | One order = one store |
-| Price tier | Website (or Commerce price book later) | Read for checkout | Offer resolve | Location > HQ > tier formula |
+| Price tier | Website admin + self-serve default 3 (or Commerce price book later) | Read for checkout | Offer resolve | Location > HQ > tier formula; **never downgrade Tier 1/2 on Zoho map** |
 | Stable SKU | Commerce (intended) / website cache now | Commerce → website | Catalog sync job | SKU is join key |
 | Pack / unit / short blurb | Commerce custom fields (verify API) or website `shipping_attributes` / future columns | Commerce → website after mapping | Catalog sync | Do not invent; hide empty UI modules. Draft SQL `20261021_product_display_fields.sql` not applied |
 | Product images | Commerce media URLs | Commerce → website `images[]` | Catalog sync | Empty → “No image” plate; never fake packaging |

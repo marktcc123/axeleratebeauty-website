@@ -26,7 +26,8 @@ This increment does **not** deploy production, charge cards, send customer email
 - Public catalog reads only `catalog_products` columns. Database errors are thrown (`CatalogError`); they are not converted into an empty warehouse.
 - `catalog_products` is still `security_invoker=false` so anonymous SELECT works while `products` has no browser policy. Independent migration `20261020065643_catalog_products_select_only.sql` revokes PUBLIC/anon/authenticated writes and leaves SELECT. The `security_definer_view` advisor remains expected. Staging read-back confirmed SELECT-only for browser roles.
 - Approved partner catalog uses `authorizedPriceLabel` (shows the resolved tier/location price). Public marketing still uses `publicPriceLabel` gated by `publicPriceVisible`. Do not flip `publicPriceVisible` globally to fix partner UI.
-- Partner portal core: **Catalog / Orders / Account** (Billing + Support + Profile hubbed). Purchase UI uses shared `.commerce-*` tokens, `ProductImage` (neutral empty plate), `QtyControl`, `ProductDetailView`.
+- Partner portal core: **Shop / Orders / Account** (labels; URL `/partner/catalog` kept). Billing + Support hubbed under Account. Cart uses icon + count. Purchase UI uses shared `.commerce-*` tokens, `ProductImage`, `QtyControl`, `ProductDetailView`.
+- **Self-serve Tier 3**: independent registration inserts `verification_status=approved` + `price_tier=3` server-side (ignores client privilege fields). `canPurchase` requires email confirmed + approved + org + location. Suspended stay blocked. Historical `pending` orgs are **not** batch-activated (`docs/PENDING_ACCOUNT_ACTIVATION.md`). Invites still join existing HQ without changing host tier/status. Typed company names never bind Belle / Brow Arc.
 - Partner product detail: `/partner/catalog/[slug]`. Public `/professional-kits` listing still redirects to programs; **slug detail is not redirected** (prior redirect caused staging SKU 404).
 - Content model: reuse `description` / `intended_use` / `contents` / `shipping_attributes.pack_label|unit_label`; hide empty modules. Draft columns in `supabase/migrations/20261021_product_display_fields.sql` (not applied).
 - Layout fixtures: `/dev/ui-fixtures` (local or `ENABLE_UI_FIXTURES=1`) — not purchasable.
@@ -65,7 +66,10 @@ This increment does **not** deploy production, charge cards, send customer email
 | --- | --- | --- |
 | Marketing pages, programs, approved case stories | Website | Author and publish |
 | Login identity | Supabase Auth | Authenticate |
-| Approval / suspend / store assignment | Website admin | Controls portal access |
+| Email verification | Supabase Auth | Required for purchase |
+| Purchase eligibility (approve/suspend historical) | Website admin | Separate from tier; new self-serve starts approved |
+| Price tier (default 3; Tier 1/2 upgrades) | Website admin | Zoho map must not downgrade Tier 1/2 |
+| Store / location assignment | Invite + admin | One order = one authorized location |
 | Zoho Account / Contact IDs | Admin mapping after live CRM read | Store IDs only; never bind by company name |
 | CRM follow-up notes | Zoho CRM | Sync inbound later; ignore website-origin loops |
 | Purchasable SKU, publish state, customer price | Zoho Commerce after one-SKU verification | Local `products` becomes read-only cache |

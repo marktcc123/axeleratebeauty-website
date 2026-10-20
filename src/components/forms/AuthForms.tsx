@@ -70,7 +70,9 @@ export function RegisterForm({ inviteToken }: { inviteToken?: string }) {
       {!inviteToken && (
         <>
           <label className="text-sm" htmlFor="reg-business">Business name<input id="reg-business" name="businessName" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-          <p className="text-sm text-muted">Entering a company name creates a new pending account. It does not grant access to an existing salon group.</p>
+          <p className="text-sm text-muted">
+            Creates a new business account you can shop with after email confirmation. Typing a company name does not join an existing group — use an invitation for that.
+          </p>
         </>
       )}
       <label className="text-sm" htmlFor="reg-phone">Business phone<input id="reg-phone" name="phone" required autoComplete="tel" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>

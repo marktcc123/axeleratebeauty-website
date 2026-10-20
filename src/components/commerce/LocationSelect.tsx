@@ -11,7 +11,7 @@ export function LocationSelect({
   activeLocationId: string | null;
 }) {
   if (locations.length === 0) {
-    return <p className="text-sm text-muted">No authorized store is linked to this account yet.</p>;
+    return <p className="text-sm text-muted">No shipping location is linked to this account yet.</p>;
   }
 
   const selected = locations.find((location) => location.id === activeLocationId) ?? locations[0];
@@ -20,7 +20,7 @@ export function LocationSelect({
   if (locations.length === 1) {
     return (
       <p className="text-sm text-stone-deep">
-        Ordering store: <strong>{label}</strong>
+        Shipping address: <strong>{label}</strong>
       </p>
     );
   }
@@ -28,16 +28,14 @@ export function LocationSelect({
   return (
     <form className="sm:max-w-md">
       <label htmlFor="active-location" className="text-sm text-muted">
-        Ordering store
+        Ordering for
         <select
           id="active-location"
           name="locationId"
           defaultValue={activeLocationId ?? locations[0].id}
           className="mt-1 w-full border border-sand-200 bg-white px-3 py-2"
           onChange={async (event) => {
-            const formData = new FormData();
-            formData.set("locationId", event.target.value);
-            await selectActiveLocation(String(formData.get("locationId") ?? ""));
+            await selectActiveLocation(event.target.value);
           }}
         >
           {locations.map((location) => (

@@ -18,7 +18,9 @@ Living list from overnight / UX iteration. Status values: `done` | `in_progress`
 | B12 | Catalog image missing / broken | Staging SKUs may lack images | Uneven list | Fallback image already; add empty-state art later | Asset pack | deferred |
 | B13 | Auto reorder reminders | Operator request, no validated rule | Would need email + thresholds | Design only until rules approved | Business rules + email | blocked |
 | B14 | Mobile qty steppers vs number input | Catalog uses number input | One-hand speed | Match Cart ± steppers on catalog | None | done |
-| B15 | Public professional programs vs partner catalog confusion | Marketing “programs” vs buyable SKUs | New clients ask wrong path | for-professionals copy points Login → Catalog after approval | Copy review | done |
+| B15 | Public professional programs vs partner catalog confusion | Marketing “programs” vs buyable SKUs | New clients ask wrong path | Public Shop → register/login; Programs stay consultative | Copy review | done |
+| B26 | Manual approve-before-buy blocked self-serve US B2B | Prior `pending` insert + `canPurchase` only on approved | New independents could not shop | Server defaults approved+Tier 3; email verify separate; historical pending listed not batch-activated | Ops review pending list | done |
+| B27 | Partner nav said Catalog; duplicate chrome | SiteHeader labels | Internal jargon | Shop / Orders / Account + cart icon; URL `/partner/catalog` kept | None | done |
 | B16 | Orders history flooded with failed checkout attempts | Playwright: dozens of `failed` before paid/refunded | Hard to find real orders | Default-hide failed; `?showFailed=1` toggle | None | done |
 | B17 | Staging SKUs 404 on public `/professional-kits/[slug]` for anon in some paths | Anon kit slug → 404 / programs alias | Low for buyers; marketing uses programs | Keep staging SKUs partner-catalog only | Content | deferred |
 | B18 | Footer still shows Professional Login while signed in | Snapshot footer links | Mild inconsistency | Session-aware footer later | None | deferred |

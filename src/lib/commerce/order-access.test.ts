@@ -19,6 +19,7 @@ const session: SessionContext = {
   organizationId: "org-a",
   organizationName: "Salon A",
   verificationStatus: "approved",
+  emailVerified: true,
   orgRole: "member",
   locations: [{ id: "loc-1", name: "Store 1", city: null, state: null, role: "buyer" }],
   activeLocationId: "loc-1",

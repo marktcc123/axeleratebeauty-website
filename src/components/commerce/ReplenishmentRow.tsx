@@ -41,7 +41,8 @@ export function ReplenishmentRow({ product }: { product: Product }) {
         </h2>
         <p className="commerce-meta mt-1">{productSpecLine(product)}</p>
         {blurb ? <p className="mt-2 text-sm leading-relaxed text-muted">{blurb}</p> : null}
-        <p className="commerce-price mt-3">{authorizedPriceLabel(product)}</p>
+        <p className="mt-3 text-xs uppercase tracking-[0.12em] text-muted">Your price</p>
+        <p className="commerce-price">{authorizedPriceLabel(product)}</p>
         {stock && !unavailable ? <p className="commerce-meta mt-1">{stock}</p> : null}
         {stockHint ? (
           <p className={`mt-1 text-sm ${unavailable ? "text-accent-tac" : "text-muted"}`}>{stockHint}</p>
@@ -84,7 +85,7 @@ export function ReplenishmentRow({ product }: { product: Product }) {
             router.refresh();
           }}
         >
-          {pending ? "Adding…" : "Add"}
+          {pending ? "Adding…" : "Add to cart"}
         </button>
       </div>
     </article>

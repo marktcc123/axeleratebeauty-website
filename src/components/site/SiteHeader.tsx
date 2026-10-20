@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Logo } from "@/components/Logo";
+import { CartNavLink } from "@/components/commerce/CartNavLink";
 import { logoutBusiness } from "@/app/actions/auth";
 import type { SessionContext } from "@/lib/types";
 import { canPurchase } from "@/lib/types";
@@ -12,9 +13,9 @@ import { canPurchase } from "@/lib/types";
 const marketingLinks = [
   { href: "/", label: "Home" },
   { href: "/full-salon-system", label: "Full Salon System" },
-  { href: "/professional-programs", label: "Professional Programs" },
+  { href: "/professional-programs", label: "Programs" },
   { href: "/success-stories", label: "Real Partners" },
-  { href: "/for-professionals", label: "For Professionals" },
+  { href: "/for-professionals", label: "Shop" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -44,11 +45,10 @@ export function SiteHeader({
   const partnerMode = Boolean(session.userId) && isPartnerWorkspace(pathname);
   const accountHref = accountHome(session);
 
-  const partnerLinks = [
-    ...(approved ? [{ href: "/partner/catalog", label: "Catalog" }] : []),
+  const partnerTextLinks = [
+    ...(approved ? [{ href: "/partner/catalog", label: "Shop" }] : []),
     { href: "/partner/orders", label: "Orders" },
     { href: "/partner/account", label: "Account" },
-    { href: "/cart", label: cartCount > 0 ? `Cart (${cartCount})` : "Cart" },
   ];
 
   return (
@@ -65,7 +65,7 @@ export function SiteHeader({
 
         {partnerMode ? (
           <nav aria-label="Partner purchase" className="hidden items-center gap-5 lg:flex">
-            {partnerLinks.map((link) => (
+            {partnerTextLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -74,6 +74,7 @@ export function SiteHeader({
                 {link.label}
               </Link>
             ))}
+            <CartNavLink count={cartCount} />
           </nav>
         ) : (
           <nav className="hidden items-center gap-5 lg:flex">
@@ -107,13 +108,9 @@ export function SiteHeader({
                 Book a Consultation
               </Link>
               <Link href={accountHref} className="text-sm text-stone-deep">
-                {session.userId ? (approved ? "Catalog" : "My Account") : "Professional Login"}
+                {session.userId ? (approved ? "Shop" : "My Account") : "Professional Login"}
               </Link>
-              {session.userId ? (
-                <Link href="/cart" className="text-sm text-stone-deep">
-                  Cart{cartCount > 0 ? ` (${cartCount})` : ""}
-                </Link>
-              ) : null}
+              {session.userId ? <CartNavLink count={cartCount} /> : null}
             </>
           )}
         </div>
@@ -144,7 +141,7 @@ export function SiteHeader({
           >
             <div id="mobile-navigation" className="flex flex-col px-5 py-4">
               {partnerMode
-                ? partnerLinks.map((link) => (
+                ? partnerTextLinks.map((link) => (
                     <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="py-3 text-stone-deep">
                       {link.label}
                     </Link>
@@ -156,6 +153,9 @@ export function SiteHeader({
                   ))}
               {partnerMode ? (
                 <>
+                  <div className="py-3">
+                    <CartNavLink count={cartCount} onNavigate={() => setOpen(false)} />
+                  </div>
                   <Link href="/" onClick={() => setOpen(false)} className="py-3">
                     Website
                   </Link>
@@ -171,12 +171,12 @@ export function SiteHeader({
                     Book a Consultation
                   </Link>
                   <Link href={accountHref} onClick={() => setOpen(false)} className="py-3">
-                    {session.userId ? (approved ? "Catalog" : "My Account") : "Professional Login"}
+                    {session.userId ? (approved ? "Shop" : "My Account") : "Professional Login"}
                   </Link>
                   {session.userId ? (
-                    <Link href="/cart" onClick={() => setOpen(false)} className="py-3">
-                      Cart{cartCount > 0 ? ` (${cartCount})` : ""}
-                    </Link>
+                    <div className="py-3">
+                      <CartNavLink count={cartCount} onNavigate={() => setOpen(false)} />
+                    </div>
                   ) : null}
                   {session.userId ? (
                     <form action={logoutBusiness}>

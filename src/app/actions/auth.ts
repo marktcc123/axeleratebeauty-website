@@ -10,10 +10,25 @@ import { isSupabaseConfigured, siteUrl } from "@/lib/config";
 import { checkRateLimit, clientKey } from "@/lib/rate-limit";
 import { getSession } from "@/lib/session";
 import { createServerSupabase, createServiceSupabase } from "@/lib/supabase/server";
+import { selfServeOrganizationInsert } from "@/lib/auth/purchase-eligibility";
 import { canPurchase } from "@/lib/types";
 
 function formText(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
+}
+
+/** Client may send privilege fields; they are never read for authorization. */
+function ignoreClientPrivilegeClaims(formData: FormData) {
+  void formData.get("tier");
+  void formData.get("priceTier");
+  void formData.get("price_tier");
+  void formData.get("role");
+  void formData.get("organizationId");
+  void formData.get("organization_id");
+  void formData.get("is_admin");
+  void formData.get("isAdmin");
+  void formData.get("verificationStatus");
+  void formData.get("verification_status");
 }
 
 function hashToken(token: string) {
@@ -53,6 +68,8 @@ export async function registerBusiness(formData: FormData) {
   if (!isSupabaseConfigured()) {
     return { error: "Account services are not configured yet." };
   }
+
+  ignoreClientPrivilegeClaims(formData);
 
   const email = formEmail(formData);
   const password = formPassword(formData);
@@ -129,20 +146,23 @@ export async function registerBusiness(formData: FormData) {
   }
 
   if (!organizationId) {
+    // Independent self-serve: server defaults only (approved + Tier 3). Never trust form tier/role/org.
+    // Typed company names never bind Belle / Brow Arc or other existing accounts.
     const { data: organization, error: orgError } = await service
       .from("organizations")
-      .insert({
-        name: businessName,
-        business_type: businessType || null,
-        website: website || null,
-        phone,
-        address_line1: addressLine1,
-        city,
-        state,
-        postal_code: postalCode,
-        license_info: licenseInfo || null,
-        verification_status: "pending",
-      })
+      .insert(
+        selfServeOrganizationInsert({
+          name: businessName,
+          businessType: businessType || null,
+          website: website || null,
+          phone,
+          addressLine1,
+          city,
+          state,
+          postalCode,
+          licenseInfo: licenseInfo || null,
+        }),
+      )
       .select("id")
       .single();
 
@@ -156,6 +176,7 @@ export async function registerBusiness(formData: FormData) {
     id: data.user.id,
     organization_id: organizationId,
     full_name: fullName,
+    // Invite may set member/company_admin; independent signup is company_admin. Never take role from the form.
     role,
     is_admin: false,
   });
@@ -193,11 +214,13 @@ export async function registerBusiness(formData: FormData) {
   if (!data.session) {
     return {
       error: null,
-      message: "Check your email to confirm the account, then sign in. Entering a company name does not grant access to an existing group.",
+      message:
+        "Check your email to confirm your account, then sign in to shop. Typing a company name does not link you to an existing group account.",
     };
   }
 
-  redirect("/partner/dashboard");
+  // Session present ⇒ email confirmation not blocking; self-serve buyers land in Shop.
+  redirect(inviteToken ? "/partner/dashboard" : "/partner/catalog");
 }
 
 export async function loginBusiness(formData: FormData) {
@@ -328,11 +351,16 @@ export async function createOrganizationInvite(formData: FormData) {
 }
 
 export async function selectActiveLocation(locationId: string) {
+  const { revalidatePath } = await import("next/cache");
   const { getSession } = await import("@/lib/session");
   const session = await getSession();
   if (!session.locations.some((location) => location.id === locationId)) {
-    return { error: "That store is not available on this account." };
+    return { error: "That location is not available on this account." };
   }
   await writeActiveLocationId(locationId);
+  // Cart prices and purchase rights must re-resolve for the new location.
+  revalidatePath("/cart");
+  revalidatePath("/partner/catalog");
+  revalidatePath("/partner/orders");
   return { error: null };
 }

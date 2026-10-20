@@ -27,19 +27,16 @@ export default async function PartnerCatalogPage({
 
   return (
     <CommercePage>
-      <CommerceHeader
-        eyebrow="Catalog"
-        title="Shop for this store"
-        description="Prices are for the store selected above. Add items here, or open a product for more detail."
-      />
+      <CommerceHeader title="Shop" description="Search products and add what you need." />
 
       <form className="mt-8 grid gap-3 sm:grid-cols-[1fr_11rem_auto]" action="/partner/catalog">
         <label className="text-sm text-muted" htmlFor="catalog-q">
-          Search name or SKU
+          Search products
           <input
             id="catalog-q"
             name="q"
             defaultValue={q}
+            placeholder="Name or SKU"
             className="commerce-field mt-1"
           />
         </label>
@@ -59,16 +56,26 @@ export default async function PartnerCatalogPage({
             ))}
           </select>
         </label>
-        <button className="commerce-btn self-end">Apply</button>
+        <button className="commerce-btn self-end">Search</button>
       </form>
 
       {!approved ? (
-        <p className="mt-10 text-muted">Purchasing unlocks after this business account is approved.</p>
+        <p className="mt-10 text-muted">
+          {!session.emailVerified
+            ? "Confirm your email to see your prices and shop."
+            : session.verificationStatus === "suspended"
+              ? "Purchasing is paused on this account. Open Account for support."
+              : session.verificationStatus === "pending"
+                ? "This account is still waiting for access. Contact support if you expected to shop already."
+                : session.locations.length === 0
+                  ? "A shipping location is required before you can shop."
+                  : "Purchasing is not available for this account yet."}
+        </p>
       ) : filtered.length === 0 ? (
         <p className="mt-10 text-muted">
           {query || category
-              ? "No products match this search. Clear filters to see your full list."
-              : "No products are available for this store yet."}
+            ? "No products match this search. Clear filters to see your full list."
+            : "No products are available yet."}
         </p>
       ) : (
         <div className="mt-4 border-t border-sand-200">
@@ -80,10 +87,10 @@ export default async function PartnerCatalogPage({
 
       <div className="mt-10 flex flex-wrap gap-4 text-sm">
         <Link href="/cart" className="underline-offset-4 hover:underline">
-          Review cart
+          View cart
         </Link>
         <Link href="/partner/orders" className="underline-offset-4 hover:underline">
-          Past orders
+          Orders
         </Link>
       </div>
     </CommercePage>

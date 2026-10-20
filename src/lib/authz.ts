@@ -24,7 +24,7 @@ export async function requireIdentifiedUser() {
 export async function requireApprovedBuyer() {
   const session = await requireIdentifiedUser();
   if (!canPurchase(session)) {
-    throw new AuthorizationError("Purchasing is available after approval and store selection.", "forbidden");
+    throw new AuthorizationError("Purchasing requires a confirmed email, an active business profile, and a shipping location.", "forbidden");
   }
   return session;
 }

@@ -24,7 +24,14 @@ export const KNOWN_ZOHO_ACCOUNT_CANDIDATES = [
 export const FIELD_OWNERS = {
   inquiry: "website",
   organizationProfile: "website",
+  /** Purchase gate for historical/suspended accounts — not the same as email verification or price tier. */
   verificationStatus: "website_admin",
+  /**
+   * Default Tier 3 on independent self-serve signup (website).
+   * Tier 1 / Tier 2 upgrades are website_admin (or mapped Commerce price books later).
+   * Zoho sync must never downgrade an existing Tier 1 / Tier 2.
+   */
+  priceTier: "website_admin",
   zohoAccountId: "admin_mapping",
   crmFollowUp: "zoho",
   productSku: "zoho_commerce",

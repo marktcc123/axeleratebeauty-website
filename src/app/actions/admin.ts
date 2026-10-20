@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { nextPriceTierWithoutDowngrade } from "@/lib/auth/purchase-eligibility";
 import { requireAuthorizedService, requirePlatformAdmin } from "@/lib/authz";
 import { getZohoAccount } from "@/lib/integrations/zoho/crm";
 import { retryFailedZohoJobs } from "@/lib/integrations/zoho/sync";
@@ -44,13 +45,20 @@ export async function mapZohoAccount(formData: FormData) {
 
   try {
     const account = await getZohoAccount(zohoAccountId);
+    const { data: existing } = await service
+      .from("organizations")
+      .select("price_tier")
+      .eq("id", organizationId)
+      .maybeSingle();
+    // Never lower an existing Tier 1 / Tier 2 via Zoho map sync.
+    const safeTier = nextPriceTierWithoutDowngrade(existing?.price_tier, priceTier);
     await service
       .from("organizations")
       .update({
         zoho_account_id: zohoAccountId,
         zoho_sync_status: "mapped",
         commercial_model: commercialModel || null,
-        price_tier: priceTier,
+        ...(safeTier != null ? { price_tier: safeTier } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("id", organizationId);

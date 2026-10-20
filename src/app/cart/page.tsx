@@ -38,20 +38,20 @@ export default async function CartPage() {
       {session.userId ? <PartnerChrome session={session} /> : null}
       <CommercePage narrow>
         <CommerceHeader
-          eyebrow="Cart"
           title="Your cart"
-          description="Update quantities anytime. Checkout opens when your saved cart matches what you see."
+          description="Update quantities, remove items, or continue shopping. Tax and shipping are calculated at checkout."
         />
 
         {activeStore ? (
           <div className="mt-6 space-y-1 text-sm text-stone-deep">
             <p>
-              Ordering for <strong>{activeStore.name}</strong>
+              {session.locations.length > 1 ? "Ordering for" : "Shipping to"}{" "}
+              <strong>{activeStore.name}</strong>
               {activeStore.city ? ` · ${activeStore.city}` : ""}
               {activeStore.state ? `, ${activeStore.state}` : ""}
             </p>
             <p className="text-muted">
-              Stripe Checkout collects the delivery address. Store name and city are not a complete shipping address.
+              Confirm the full delivery address in Stripe Checkout. The location name here is not a complete shipping address.
             </p>
           </div>
         ) : null}

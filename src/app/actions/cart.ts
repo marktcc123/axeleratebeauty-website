@@ -33,7 +33,10 @@ function cartError(error: unknown) {
 export async function addToCart(productId: string, quantity = 1) {
   const session = await getSession();
   if (!canPurchase(session)) {
-    return { error: "Create and verify a professional account, then select a store before purchasing.", redirectTo: "/partner/register" };
+    return {
+      error: "Confirm your email and complete your business profile before purchasing.",
+      redirectTo: "/partner/register",
+    };
   }
 
   try {
@@ -76,7 +79,7 @@ export async function removeCartItem(productId: string) {
 export async function reorderProduct(slug: string) {
   const session = await getSession();
   if (!canPurchase(session)) {
-    return { error: "Approved accounts can reorder from order history.", redirectTo: "/partner/login" };
+    return { error: "Sign in with a shopping-ready account to reorder.", redirectTo: "/partner/login" };
   }
   const product = await getPublishedProduct(slug);
   if (!product?.reorderEligible) {
@@ -88,7 +91,7 @@ export async function reorderProduct(slug: string) {
 export async function reorderAuthorizedProduct(productId: string) {
   const session = await getSession();
   if (!canPurchase(session)) {
-    return { error: "Approved accounts can reorder from order history.", redirectTo: "/partner/login" };
+    return { error: "Sign in with a shopping-ready account to reorder.", redirectTo: "/partner/login" };
   }
   const products = await getAuthorizedProductsByIds([productId], session);
   const product = products[0];

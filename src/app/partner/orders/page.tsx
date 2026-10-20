@@ -116,9 +116,8 @@ export default async function OrdersPage({
   return (
     <CommercePage>
       <CommerceHeader
-        eyebrow="Orders"
-        title="Your orders"
-        description="View your orders and payment status. Reorders use current prices and availability."
+        title="Orders"
+        description="Date, total, and payment status. Open a row for line items. Buy again uses today’s prices."
       />
       {failedCount > 0 ? (
         <p className="mt-4 text-sm text-muted">
@@ -168,7 +167,8 @@ export default async function OrdersPage({
                   <div className="min-w-0">
                     <p className="break-all font-serif text-2xl text-ink">{order.order_number}</p>
                     <p className="mt-1 text-sm text-muted">
-                      {new Date(order.created_at).toLocaleDateString()} · {storeName(order.location_id)}
+                      {new Date(order.created_at).toLocaleDateString()}
+                      {session.locations.length > 1 ? ` · ${storeName(order.location_id)}` : ""}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -177,77 +177,70 @@ export default async function OrdersPage({
                   </div>
                 </div>
 
-                <p className="mt-3 text-sm text-muted">
-                  {order.order_kind === "contract_installment" ? "Contract payment" : "Replenishment"}
+                <p className="mt-4 text-lg tabular-nums font-medium text-ink">
+                  {formatMoney(money.orderTotalCents)}
                 </p>
-
-                <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                  <div>
-                    <dt className="text-muted">Merchandise</dt>
-                    <dd className="tabular-nums text-stone-deep">{formatMoney(money.merchandiseCents)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Shipping</dt>
-                    <dd className="tabular-nums text-stone-deep">
-                      {formatPendingMoney(money.shippingCents, money.shippingPending)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Tax</dt>
-                    <dd className="tabular-nums text-stone-deep">
-                      {formatPendingMoney(money.taxCents, money.taxPending)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">{money.orderTotalCaption}</dt>
-                    <dd className="tabular-nums font-medium text-stone-deep">{formatMoney(money.orderTotalCents)}</dd>
-                  </div>
-                  {money.showPaidAmount && money.paidCents != null ? (
-                    <div>
-                      <dt className="text-muted">{money.paidCaption}</dt>
-                      <dd className="tabular-nums text-stone-deep">{formatMoney(money.paidCents)}</dd>
-                    </div>
-                  ) : null}
-                  {money.showRefunded && money.refundedCents != null ? (
-                    <div>
-                      <dt className="text-muted">Refunded</dt>
-                      <dd className="tabular-nums text-stone-deep">{formatMoney(money.refundedCents)}</dd>
-                    </div>
-                  ) : null}
-                  {money.showNetPaid && money.netPaidCents != null ? (
-                    <div>
-                      <dt className="text-muted">Net paid</dt>
-                      <dd className="tabular-nums font-medium text-stone-deep">{formatMoney(money.netPaidCents)}</dd>
-                    </div>
-                  ) : null}
-                </dl>
-
-                {order.tracking_number ? (
-                  <p className="mt-3 break-all text-sm">Tracking: {order.tracking_number}</p>
+                {money.showRefunded && money.refundedCents != null ? (
+                  <p className="mt-1 text-sm text-muted">
+                    Refunded {formatMoney(money.refundedCents)}
+                    {money.showNetPaid && money.netPaidCents != null
+                      ? ` · Net paid ${formatMoney(money.netPaidCents)}`
+                      : ""}
+                  </p>
                 ) : null}
 
-                <ul className="mt-4 space-y-2 border-t border-sand-200 pt-4 text-sm">
-                  {(order.order_items ?? []).map((item) => {
-                    const reorder = item.product_id ? reorderById.get(item.product_id) : null;
-                    return (
-                      <li
-                        key={`${order.id}-${item.sku}-${item.product_id ?? "snapshot"}`}
-                        className="flex flex-wrap items-baseline justify-between gap-2"
-                      >
-                        <span className="min-w-0 text-stone-deep">
-                          <span className="break-words">{item.name}</span>
-                          <span className="text-muted">
-                            {" "}
-                            · {item.quantity} · {item.sku} · was {formatMoney(item.unit_price_cents)}
+                <details className="mt-4 border-t border-sand-200 pt-4">
+                  <summary className="cursor-pointer text-sm font-medium text-ink">View order</summary>
+                  <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <dt className="text-muted">Merchandise</dt>
+                      <dd className="tabular-nums text-stone-deep">{formatMoney(money.merchandiseCents)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">Shipping</dt>
+                      <dd className="tabular-nums text-stone-deep">
+                        {formatPendingMoney(money.shippingCents, money.shippingPending)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">Tax</dt>
+                      <dd className="tabular-nums text-stone-deep">
+                        {formatPendingMoney(money.taxCents, money.taxPending)}
+                      </dd>
+                    </div>
+                    {money.showPaidAmount && money.paidCents != null ? (
+                      <div>
+                        <dt className="text-muted">{money.paidCaption}</dt>
+                        <dd className="tabular-nums text-stone-deep">{formatMoney(money.paidCents)}</dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                  {order.tracking_number ? (
+                    <p className="mt-3 break-all text-sm">Tracking: {order.tracking_number}</p>
+                  ) : null}
+                  <ul className="mt-4 space-y-2 text-sm">
+                    {(order.order_items ?? []).map((item) => {
+                      const reorder = item.product_id ? reorderById.get(item.product_id) : null;
+                      return (
+                        <li
+                          key={`${order.id}-${item.sku}-${item.product_id ?? "snapshot"}`}
+                          className="flex flex-wrap items-baseline justify-between gap-2"
+                        >
+                          <span className="min-w-0 text-stone-deep">
+                            <span className="break-words">{item.name}</span>
+                            <span className="text-muted">
+                              {" "}
+                              · {item.quantity} · was {formatMoney(item.unit_price_cents)}
+                            </span>
                           </span>
-                        </span>
-                        {reorder && order.order_kind !== "contract_installment" && item.product_id ? (
-                          <ReorderButton productId={item.product_id} />
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
+                          {reorder && order.order_kind !== "contract_installment" && item.product_id ? (
+                            <ReorderButton productId={item.product_id} />
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </details>
               </article>
             );
           })}
@@ -255,7 +248,7 @@ export default async function OrdersPage({
       )}
 
       <Link href="/partner/catalog" className="mt-8 inline-block text-sm underline-offset-4 hover:underline">
-        Back to catalog
+        Continue shopping
       </Link>
     </CommercePage>
   );

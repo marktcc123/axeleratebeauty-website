@@ -88,19 +88,14 @@ export type SessionContext = {
   organizationId: string | null;
   organizationName: string | null;
   verificationStatus: VerificationStatus | null;
+  /** Supabase Auth email confirmation — separate from org purchase status and price tier. */
+  emailVerified: boolean;
   orgRole: OrgRole | null;
   locations: AuthorizedLocation[];
   activeLocationId: string | null;
 };
 
-export function canPurchase(session: SessionContext | null) {
-  return Boolean(
-    session?.userId &&
-      session.organizationId &&
-      session.verificationStatus === "approved" &&
-      session.activeLocationId,
-  );
-}
+export { canPurchase } from "@/lib/auth/purchase-eligibility";
 
 export function isPending(session: SessionContext | null) {
   return session?.verificationStatus === "pending";

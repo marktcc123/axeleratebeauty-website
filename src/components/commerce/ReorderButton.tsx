@@ -31,7 +31,7 @@ export function ReorderButton({ productId }: { productId: string }) {
           router.push("/cart");
         }}
       >
-        {pending ? "Checking…" : "Add again at current price"}
+        {pending ? "Checking…" : "Buy again"}
       </button>
       {error ? (
         <span className="max-w-[14rem] text-right text-xs text-accent-tac" role="alert">
