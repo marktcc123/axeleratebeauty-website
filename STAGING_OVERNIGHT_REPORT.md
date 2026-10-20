@@ -9,7 +9,8 @@ Preview alias: https://axeleratebeauty-website-git-feature-phas-590110-axelerate
 | Item | Value |
 | --- | --- |
 | Commerce redesign | `a46c6ef5228f00c50af02ce79a4cf187cbdd0014` |
-| Detail-route fix (push pending this report) | follow-up commit after `a46c6ef` |
+| Detail-route fix | `297b73002782d9d1a3054ff8913321755c779bd3` |
+| Latest Preview unique | `https://axeleratebeauty-website-kr7ladv68-axelerateglobal.vercel.app` |
 | Acceptance | `PRODUCT_EXPERIENCE_ACCEPTANCE.md` |
 | Backlog | `PRODUCT_IMPROVEMENT_BACKLOG.md` |
 | Evidence | `docs/ux-evidence/v2-*` |
@@ -46,7 +47,7 @@ Preview alias: https://axeleratebeauty-website-git-feature-phas-590110-axelerate
 | Cart lines + pending ship/tax | 通过 |
 | Orders refunded first / failed hidden | 通过 |
 | Fixtures long-name / no-image | 通过 (SIMULATED local) |
-| Partner detail $12 + store strip | 待改善 → re-verify after route-fix deploy |
+| Partner detail $12 + store strip | 通过 (`v2-detail-fixed-1440`) |
 | Real photos / pack_label data | 外部阻塞 |
 | Zoho live / DB migration apply | 外部阻塞 |
 

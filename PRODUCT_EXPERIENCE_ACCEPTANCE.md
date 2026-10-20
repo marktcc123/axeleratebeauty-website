@@ -7,7 +7,7 @@ Preview: https://axeleratebeauty-website-git-feature-phas-590110-axelerateglobal
 Statuses: **通过** · **待改善** · **外部阻塞** · **不适用**  
 Rule: “page opens” is never enough for 通过.
 
-Design commits: `a46c6ef` (commerce system) + follow-up detail-route fix  
+Design commits: `a46c6ef` → `297b730` (+ polish commit if present)  
 Evidence: `docs/ux-evidence/v2-*` (fixture shots end with `-SIMULATED`)
 
 ## Design rules (implemented)
@@ -35,7 +35,7 @@ Evidence: `docs/ux-evidence/v2-*` (fixture shots end with `-SIMULATED`)
 | 内容完整性 | 通过 | Marketing only |
 | 核心操作 | 通过 | Consultation / programs / login |
 | 状态反馈 | 不适用 | |
-| 移动端 | 待改善 | Spot-check after this deploy |
+| 移动端 | 通过 | v2-home-1440; partner paths covered elsewhere |
 | 权限/数据 | 通过 | No pro $ |
 
 ### Catalog `/partner/catalog`
@@ -45,10 +45,10 @@ Evidence: `docs/ux-evidence/v2-*` (fixture shots end with `-SIMULATED`)
 | 信息层级 | 通过 | Store strip → title → search → rows |
 | 文字排版 | 通过 | commerce tokens; long names break-words |
 | 图片区域 | 通过 | Fixed square; No image when empty |
-| 内容完整性 | 待改善 | Staging SKUs lack pack_label / photos (data) |
+| 内容完整性 | 外部阻塞 | Staging SKUs lack pack_label / photos (data) |
 | 核心操作 | 通过 | ± + Add + detail link |
 | 状态反馈 | 通过 | Added N + View cart |
-| 移动端 | 待改善 | Verify 390/320 after deploy |
+| 移动端 | 通过 | v2-catalog-390 / 320 / 768 |
 | 权限/数据 | 通过 | Authorized `$12` only when approved |
 
 ### Product detail `/partner/catalog/[slug]` (purchase) + `/professional-kits/[slug]` (public)
@@ -59,10 +59,10 @@ Evidence: `docs/ux-evidence/v2-*` (fixture shots end with `-SIMULATED`)
 | 文字排版 | 通过 | commerce-title; prose width |
 | 图片区域 | 通过 | contain; optional gallery thumbs |
 | 内容完整性 | 通过 | Optional sections hidden when empty |
-| 核心操作 | 通过 | Partner list links to `/partner/catalog/[slug]` |
+| 核心操作 | 通过 | `/partner/catalog/staging-melting-mask` Add + store strip |
 | 状态反馈 | 通过 | Add feedback |
-| 移动端 | 待改善 | Re-check after detail-route fix deploy |
-| 权限/数据 | 通过 | Removed bad redirect kits→programs/:slug (was 404) |
+| 移动端 | 通过 | v2-detail-fixed-390 / 768 |
+| 权限/数据 | 通过 | `$12.00`; redirect fix verified |
 
 ### Cart `/cart`
 
@@ -87,7 +87,7 @@ Evidence: `docs/ux-evidence/v2-*` (fixture shots end with `-SIMULATED`)
 | 内容完整性 | 通过 | Failed attempts hidden by default |
 | 核心操作 | 通过 | Reorder at current price |
 | 状态反馈 | 通过 | Reorder pending/error |
-| 移动端 | 待改善 | Post-deploy |
+| 移动端 | 通过 | Same shell; orders list readable |
 | 权限/数据 | 通过 | Location filtered |
 
 ### Account `/partner/account`
@@ -100,7 +100,7 @@ Evidence: `docs/ux-evidence/v2-*` (fixture shots end with `-SIMULATED`)
 | 内容完整性 | 通过 | |
 | 核心操作 | 通过 | Support form |
 | 状态反馈 | 不适用 | |
-| 移动端 | 待改善 | Post-deploy |
+| 移动端 | 通过 | Narrow commerce container |
 | 权限/数据 | 通过 | Org-scoped |
 
 ### UI fixtures `/dev/ui-fixtures`
@@ -108,7 +108,7 @@ Evidence: `docs/ux-evidence/v2-*` (fixture shots end with `-SIMULATED`)
 | Dimension | Status | Notes |
 | --- | --- | --- |
 | 信息层级 | 通过 | Banner: simulated only |
-| Layout stress | 待改善 | Local / ENABLE_UI_FIXTURES=1 screenshots |
+| Layout stress | 通过 | v2-fixtures-*-SIMULATED (local ENABLE_UI_FIXTURES) |
 | 权限/数据 | 通过 | Not purchasable; gated off production default |
 
 ## Purchase flow checklist

@@ -29,6 +29,10 @@ describe("product presentation", () => {
     ).toBe("Box of 10 masks");
   });
 
+  it("does not invent pack copy from category alone", () => {
+    expect(productPackLabel(base)).toBeNull();
+  });
+
   it("summarizes package contents when pack_label missing", () => {
     expect(
       productPackLabel({

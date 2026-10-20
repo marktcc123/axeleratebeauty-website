@@ -25,8 +25,8 @@ export function productPackLabel(product: Pick<Product, "contents" | "shippingAt
     return `${parts[0]} · +${parts.length - 1} more`;
   }
 
-  const category = product.category.replaceAll("_", " ").trim();
-  return category || null;
+  // Category already appears as an eyebrow; do not repeat it as a fake pack line.
+  return null;
 }
 
 export function productUnitLabel(product: Pick<Product, "shippingAttributes">) {
