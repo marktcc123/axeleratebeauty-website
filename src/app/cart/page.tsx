@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CartEditor } from "@/components/commerce/CartEditor";
 import { LocationSelect } from "@/components/commerce/LocationSelect";
+import { PartnerNav } from "@/components/commerce/PartnerNav";
 import { PageIntro } from "@/components/site/PageIntro";
 import { readCart } from "@/lib/cart-cookie";
 import { getAuthorizedProductsByIds } from "@/lib/catalog";
@@ -26,31 +27,34 @@ export default async function CartPage() {
   const activeStore = session.locations.find((location) => location.id === session.activeLocationId);
 
   return (
-    <section className="bg-cream px-5 py-24 sm:px-8">
-      <div className="mx-auto max-w-3xl">
-        <PageIntro eyebrow="Cart" title="Review your professional order." />
-        <div className="mt-8">
-          <LocationSelect locations={session.locations} activeLocationId={session.activeLocationId} />
-        </div>
-        {activeStore && (
-          <div className="mt-4 space-y-1 text-sm text-stone-deep">
-            <p>
-              Ordering for {activeStore.name}
-              {activeStore.city ? ` · ${activeStore.city}` : ""}
-              {activeStore.state ? `, ${activeStore.state}` : ""}
-            </p>
-            <p className="text-muted">
-              Checkout will collect the delivery address. Store name and city are not a complete shipping address.
-            </p>
+    <>
+      <PartnerNav session={session} />
+      <section className="bg-cream px-5 py-24 sm:px-8">
+        <div className="mx-auto max-w-3xl">
+          <PageIntro eyebrow="Cart" title="Review your professional order." />
+          <div className="mt-8">
+            <LocationSelect locations={session.locations} activeLocationId={session.activeLocationId} />
           </div>
-        )}
-        <CartEditor
-          lines={lines}
-          checkoutReady={isStripeCheckoutReady()}
-          canCheckout={canPurchase(session)}
-        />
-        <Link href="/partner/catalog" className="mt-8 inline-block text-sm underline-offset-4 hover:underline">Continue shopping</Link>
-      </div>
-    </section>
+          {activeStore && (
+            <div className="mt-4 space-y-1 text-sm text-stone-deep">
+              <p>
+                Ordering for {activeStore.name}
+                {activeStore.city ? ` · ${activeStore.city}` : ""}
+                {activeStore.state ? `, ${activeStore.state}` : ""}
+              </p>
+              <p className="text-muted">
+                Checkout will collect the delivery address. Store name and city are not a complete shipping address.
+              </p>
+            </div>
+          )}
+          <CartEditor
+            lines={lines}
+            checkoutReady={isStripeCheckoutReady()}
+            canCheckout={canPurchase(session)}
+          />
+          <Link href="/partner/catalog" className="mt-8 inline-block text-sm underline-offset-4 hover:underline">Continue shopping</Link>
+        </div>
+      </section>
+    </>
   );
 }

@@ -24,7 +24,10 @@ This increment does **not** deploy production, charge cards, send customer email
 
 - Migration order is columns first, then tables, then `catalog_products`, then policies/functions. Existing same-name policies from `schema.sql` are dropped before recreate.
 - Public catalog reads only `catalog_products` columns. Database errors are thrown (`CatalogError`); they are not converted into an empty warehouse.
-- `catalog_products` is still `security_invoker=false` so anonymous SELECT works while `products` has no browser policy. Independent migration `20261020065643_catalog_products_select_only.sql` revokes PUBLIC/anon/authenticated writes and leaves SELECT. The `security_definer_view` advisor remains expected.
+- `catalog_products` is still `security_invoker=false` so anonymous SELECT works while `products` has no browser policy. Independent migration `20261020065643_catalog_products_select_only.sql` revokes PUBLIC/anon/authenticated writes and leaves SELECT. The `security_definer_view` advisor remains expected. Staging read-back confirmed SELECT-only for browser roles.
+- Approved partner catalog uses `authorizedPriceLabel` (shows the resolved tier/location price). Public marketing still uses `publicPriceLabel` gated by `publicPriceVisible`. Do not flip `publicPriceVisible` globally to fix partner UI.
+- Partner portal: Catalog / Orders / Billing / Account / Support nav; approved login lands on catalog; single-store accounts show the store without a redundant picker.
+- Overnight task/report: `STAGING_NIGHT_TASK.md`, `STAGING_OVERNIGHT_REPORT.md`, Zoho map `docs/ZOHO_FIELD_MAP.md`.
 - Payment, event, inventory, and refund RPCs revoke `PUBLIC` / `anon` / `authenticated` execute. `protect_profile_privileges` never treats `current_user` as caller authorization.
 - Inventory decrement locks the product row, uses a conditional quantity update, and deletes any movement if the update does not apply exactly one row.
 - Replayed `mark_order_paid` calls leave `partially_refunded` / `refunded` in place.
@@ -174,6 +177,8 @@ Homepage now has two paths: Full Salon System consultation and professional logi
 ## 实际通过
 
 - Staging project `rwxwvbhfbezqkgnaqvrq` applied `catalog_products_select_only` only. `anon`/`authenticated` now have SELECT on `catalog_products` and no INSERT/UPDATE/DELETE. `products` grants were not expanded. Role-simulated writes that matched no rows were denied and product row count stayed 2.
+- Playwright Preview (approved Tier 1): Melting Mask shows **$12.00**; empty cart no longer says “after account approval”.
+- Sandbox refunds on internal order `DB-MVG7294C`: partial 500¢ then remainder 1200¢ → website `refunded` / `refunded_cents=1700`; duplicate further refund rejected by Stripe; settlement has sale + two `refund_adjustment` rows (`cost_missing`).
 - Local `npm test` on a single PGlite connection, including:
   - `schema.sql` + `20261019_phase1_security.sql` + `20261019_phase1_rpc_hardening.sql` + `20261020065643_catalog_products_select_only.sql`
   - After a leftover `GRANT ALL`, browser roles can still SELECT the public catalog and cannot INSERT/UPDATE/DELETE through the view
