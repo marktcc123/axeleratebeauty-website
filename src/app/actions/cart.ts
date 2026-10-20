@@ -43,8 +43,9 @@ export async function addToCart(productId: string, quantity = 1) {
       return { error: "This product is not available for the selected store." };
     }
     const cart = await readCart();
-    const nextQty = normalizeQuantity((cart.items.find((item) => item.productId === productId)?.quantity ?? 0) + quantity);
-    await writeCart(upsertItem(cart, productId, nextQty));
+    const existing = cart.items.find((item) => item.productId === productId);
+    const nextQty = normalizeQuantity((existing?.quantity ?? 0) + quantity);
+    await writeCart(upsertItem(cart, productId, nextQty, existing?.lineId ?? crypto.randomUUID()));
     revalidatePath("/cart");
     return { error: null };
   } catch (error) {
@@ -180,7 +181,7 @@ export async function clearPaidOrderFromCart(orderNumber: string) {
       ? [{ productId: item.product_id, quantity: item.quantity }]
       : []
   ));
-  const purchased = purchasedQuantitiesToSubtract(claim.items, paidItems);
+  const purchased = purchasedQuantitiesToSubtract(claim.items, paidItems, cart.items);
   const next = markOrderCleared(subtractCartItems(cart, purchased), order.order_number);
   await writeCart(next);
   await writeCheckoutClaims(claims.filter((entry) => entry.orderNumber !== order.order_number));

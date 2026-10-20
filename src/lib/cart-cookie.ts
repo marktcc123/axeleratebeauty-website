@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
-import { mergeCheckoutClaim, parseCart, parseCheckoutClaims } from "@/lib/cart-state";
+import { ensureCartLineIds, mergeCheckoutClaim, parseCart, parseCheckoutClaims } from "@/lib/cart-state";
 import type { CartState, CheckoutClaim } from "@/lib/types";
 
 export {
   applyCartQuantityUpdates,
   cartQuantitiesDirty,
   emptyCart,
+  ensureCartLineIds,
   parseCart,
   parseCheckoutClaims,
   subtractCartItems,
@@ -32,10 +33,11 @@ export async function readCart(): Promise<CartState> {
 
 export async function writeCart(cart: CartState) {
   const store = await cookies();
+  const stamped = ensureCartLineIds(cart);
   const next: CartState = {
-    items: cart.items,
-    version: cart.version + 1,
-    clearedOrderNumbers: cart.clearedOrderNumbers,
+    items: stamped.items,
+    version: stamped.version + 1,
+    clearedOrderNumbers: stamped.clearedOrderNumbers,
   };
   store.set(CART_COOKIE, JSON.stringify(next), cookieOptions());
   return next;

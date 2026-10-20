@@ -94,11 +94,23 @@ export function checkoutReturnTitle(kind: "query_failed" | "missing" | "pending"
   }[kind];
 }
 
-export function purchasedQuantitiesToSubtract(snapshot: CartItem[], paidItems: CartItem[]): CartItem[] {
+export function purchasedQuantitiesToSubtract(
+  snapshot: CartItem[],
+  paidItems: CartItem[],
+  current: CartItem[] = snapshot,
+): CartItem[] {
   const paidById = new Map(paidItems.map((item) => [item.productId, item.quantity]));
   return snapshot.flatMap((item) => {
     const paidQty = paidById.get(item.productId);
     if (!paidQty || item.quantity < 1) return [];
-    return [{ productId: item.productId, quantity: Math.min(item.quantity, paidQty) }];
+    const currentLine = item.lineId
+      ? current.find((entry) => entry.lineId === item.lineId)
+      : current.find((entry) => entry.productId === item.productId && !entry.lineId);
+    if (!currentLine) return [];
+    return [{
+      productId: item.productId,
+      quantity: Math.min(item.quantity, paidQty, currentLine.quantity),
+      lineId: currentLine.lineId,
+    }];
   });
 }

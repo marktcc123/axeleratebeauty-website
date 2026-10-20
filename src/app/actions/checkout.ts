@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { addCheckoutClaim, readCart } from "@/lib/cart-cookie";
+import { addCheckoutClaim, readCart, writeCart } from "@/lib/cart-cookie";
 import { getAuthorizedProductsByIds } from "@/lib/catalog";
 import { isNextRedirectError, logCheckoutEvent, stripeErrorFields } from "@/lib/commerce/checkout-log";
 import { CommerceError, assertApprovedBuyer, cartTotals, pricedCart } from "@/lib/commerce/guards";
@@ -174,10 +174,11 @@ export async function startCheckout(
     orderNumber: order.order_number,
   });
 
+  const stampedCart = await writeCart(cart);
   await addCheckoutClaim({
     orderNumber: order.order_number,
-    items: cart.items,
-    cartVersion: cart.version,
+    items: stampedCart.items,
+    cartVersion: stampedCart.version,
   });
 
   let checkout;

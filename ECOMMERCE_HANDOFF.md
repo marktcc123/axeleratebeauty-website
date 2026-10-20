@@ -38,7 +38,7 @@ This increment does **not** deploy production, charge cards, send customer email
 - Checkout uses a client form + `useActionState`. Failures return a readable error; success still redirects to Stripe. Diagnostic logs record stage, code/status, and association IDs only.
 - Continue shopping points to `/partner/catalog`. Homepage revalidation was removed from quantity saves.
 - Order history treats query failure as an error, not an empty list. Line items come from order snapshots; reorder links come from the authorized catalog, not a nested `products` embed.
-- Checkout success shows processing, paid, or query failure from the server order. Cart cleanup runs only in a Server Action after the signed-in user can access a paid order, using the checkout snapshot and cart version. Pending payment does not clear the cart. Webhooks cannot clear the browser cookie.
+- Checkout success shows processing, paid, or query failure from the server order. Cart cleanup runs only in a Server Action after the signed-in user can access a paid order, using the checkout snapshot, cart version, and line IDs. Pending payment does not clear the cart. A same SKU removed and re-added after checkout gets a new line ID and is not subtracted. Webhooks cannot clear the browser cookie.
 
 ## Architecture
 
@@ -181,6 +181,7 @@ Homepage now has two paths: Full Salon System consultation and professional logi
   - Earlier catalog, privilege, claim, and settlement assertions
   - Cart quantity merge/dirty checks and checkout log redaction
   - Order list failure vs empty vs ready, cross-org denial, paid-only cart subtract, and one-time cleared-order marker
+  - Same-SKU remove-and-readd after checkout is not subtracted by the paid snapshot
 - `npm run lint` and `npm run build` are compiled separately; they do **not** replace the migration test.
 
 ## 尚未验证
@@ -198,3 +199,7 @@ Homepage now has two paths: Full Salon System consultation and professional logi
 - Real staging email delivery and first-click password recovery. Local tests do **not** prove the recovery inbox flow.
 - Browser cart quantity clicks, cookie persistence, and Stripe Checkout redirect. Local unit tests do **not** prove this UI.
 - Real webhook delivery driving the success-page refresh, and browser cart cleanup after Stripe return. Local unit tests do **not** prove this flow.
+- Stripe Tax with at least one active registration. Recent sandbox sessions show `automatic_tax.status=complete` and `amount_tax=0` because tax registrations are empty; that is not proof that website tax mapping is wrong.
+- Partial and full sandbox refunds against website order/settlement totals.
+- Cross-company and unauthorized-store reads against the hosted staging database.
+- Preview browser flows while Vercel Deployment Protection is on.

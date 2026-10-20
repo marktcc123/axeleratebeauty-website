@@ -59,6 +59,7 @@ export type Product = {
 export type CartItem = {
   productId: string;
   quantity: number;
+  lineId?: string;
 };
 
 export type CartState = {

@@ -11,7 +11,21 @@ function asCartItems(value: unknown): CartItem[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter((item): item is CartItem => Boolean(item?.productId) && Number(item.quantity) > 0)
-    .map((item) => ({ productId: String(item.productId), quantity: Math.min(99, Math.max(1, Number(item.quantity))) }));
+    .map((item) => ({
+      productId: String(item.productId),
+      quantity: Math.min(99, Math.max(1, Number(item.quantity))),
+      ...(typeof item.lineId === "string" && item.lineId ? { lineId: item.lineId } : {}),
+    }));
+}
+
+export function ensureCartLineIds(cart: CartState): CartState {
+  return {
+    ...cart,
+    items: cart.items.map((item) => ({
+      ...item,
+      lineId: item.lineId ?? crypto.randomUUID(),
+    })),
+  };
 }
 
 export function parseCart(raw: string | undefined): CartState {
@@ -55,9 +69,16 @@ export function parseCheckoutClaims(raw: string | undefined): CheckoutClaim[] {
   }
 }
 
-export function upsertItem(cart: CartState, productId: string, quantity: number): CartState {
+export function upsertItem(cart: CartState, productId: string, quantity: number, lineId?: string): CartState {
+  const existing = cart.items.find((item) => item.productId === productId);
   const items = cart.items.filter((item) => item.productId !== productId);
-  if (quantity > 0) items.push({ productId, quantity });
+  if (quantity > 0) {
+    items.push({
+      productId,
+      quantity,
+      lineId: lineId ?? existing?.lineId,
+    });
+  }
   return { ...cart, items };
 }
 
@@ -77,7 +98,7 @@ export function applyCartQuantityUpdates(cart: CartState, updates: CartItem[]): 
     if (!Number.isInteger(update.quantity) || update.quantity < 0 || update.quantity > 99) {
       throw new Error("invalid_quantity");
     }
-    next = upsertItem(next, update.productId, update.quantity);
+    next = upsertItem(next, update.productId, update.quantity, update.lineId);
   }
   return next;
 }
@@ -93,8 +114,12 @@ export function markOrderCleared(cart: CartState, orderNumber: string): CartStat
 export function subtractCartItems(cart: CartState, purchased: CartItem[]): CartState {
   let next = cart;
   for (const item of purchased) {
-    const current = next.items.find((entry) => entry.productId === item.productId)?.quantity ?? 0;
-    next = upsertItem(next, item.productId, Math.max(0, current - item.quantity));
+    const current = item.lineId
+      ? next.items.find((entry) => entry.lineId === item.lineId)
+      : next.items.find((entry) => entry.productId === item.productId && !entry.lineId)
+        ?? next.items.find((entry) => entry.productId === item.productId);
+    if (!current) continue;
+    next = upsertItem(next, current.productId, Math.max(0, current.quantity - item.quantity), current.lineId);
   }
   return next;
 }

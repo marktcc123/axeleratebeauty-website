@@ -64,6 +64,15 @@ describe("cart quantity updates", () => {
     expect(markOrderCleared(afterPaid, "DB-1").clearedOrderNumbers).toEqual(["DB-1"]);
   });
 
+  it("keeps a same-SKU line that was removed and re-added after checkout", () => {
+    const current = {
+      ...emptyCart(),
+      items: [{ productId: "a", quantity: 1, lineId: "line-new" }],
+    };
+    const after = subtractCartItems(current, [{ productId: "a", quantity: 2, lineId: "line-paid" }]);
+    expect(after.items).toEqual([{ productId: "a", quantity: 1, lineId: "line-new" }]);
+  });
+
   it("parses checkout claims without copying unknown fields", () => {
     const claims = parseCheckoutClaims(JSON.stringify([
       { orderNumber: "DB-1", items: [{ productId: "a", quantity: 2 }], cartVersion: 3, email: "hidden@example.com" },

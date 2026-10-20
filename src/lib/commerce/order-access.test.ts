@@ -78,4 +78,12 @@ describe("partner order access", () => {
       [{ productId: "a", quantity: 2 }, { productId: "c", quantity: 9 }],
     )).toEqual([{ productId: "a", quantity: 2 }]);
   });
+
+  it("does not subtract a same-SKU line that was removed and added again after checkout", () => {
+    expect(purchasedQuantitiesToSubtract(
+      [{ productId: "a", quantity: 2, lineId: "line-paid" }],
+      [{ productId: "a", quantity: 2 }],
+      [{ productId: "a", quantity: 1, lineId: "line-new" }],
+    )).toEqual([]);
+  });
 });
