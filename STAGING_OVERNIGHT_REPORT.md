@@ -11,7 +11,7 @@ Fixed Preview: https://axeleratebeauty-website-git-feature-phas-590110-axelerate
 | --- | --- |
 | `185df98c62f92cb53c2f002dc880754e3f9c9ae1` | Prior: revoke writable catalog_products grants |
 | `0f63089415e874a0e1573192d92811d791f9565d` | Authorized partner prices + purchase navigation |
-| *(follow-up)* | Cart PartnerNav + Zoho field map + this report refresh |
+| `d2c1d14c530a8d95bdb8256b7ea0f1cc714e97de` | Cart PartnerNav + Zoho field map + overnight report |
 
 Latest Preview deploy for `0f63089`: `dpl_557oSFMbRTSwGtQtyfEXpBWEkX6q` → unique URL `https://axeleratebeauty-website-28e197z1g-axelerateglobal.vercel.app` (alias = fixed Preview). READY.
 
