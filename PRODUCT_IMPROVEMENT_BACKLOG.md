@@ -26,3 +26,6 @@ Living list from overnight / UX iteration. Status values: `done` | `in_progress`
 | B20 | Detail page showed empty “will appear here” modules | Prior professional-kits copy | Noise / unprofessional | Hide empty optional sections | None | done |
 | B21 | Fake-looking fallback pack photo | `/images/product-line.webp` on empty images | Misread as this SKU | Neutral No image plate | None | done |
 | B22 | Commerce spacing/type inconsistent across pages | Mixed utility classes | Hard to scale to 3rd chain | `.commerce-*` tokens + shared components | None | done |
+| B23 | Orders lacked total / refund / net paid | Customer could not reconcile refunds | Support load | Persist-field money presentation | None | done |
+| B24 | Acceptance overclaimed mobile from desktop shots | Matrix honesty | False confidence | v3 per-viewport evidence | None | done |
+| B25 | Melting Mask 70 formal content unbound | Checklist gaps | Cannot claim content complete | Operator supply + DB bind | Content + DB | blocked |

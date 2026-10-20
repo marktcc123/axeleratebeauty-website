@@ -1,62 +1,37 @@
-# Staging Overnight Report
+# Staging Overnight / Delivery Report
 
 Branch: `feature/phase1-security-and-commerce-foundation`  
-Draft PR: https://github.com/marktcc123/axeleratebeauty-website/pull/1  
-Preview alias: https://axeleratebeauty-website-git-feature-phas-590110-axelerateglobal.vercel.app  
+HEAD: `5d03742d2dc0e3aa10fd6903929903219df55568`  
+Preview: https://axeleratebeauty-website-git-feature-phas-590110-axelerateglobal.vercel.app  
+Deploy: `dpl_7TSaY4t9EyK3B8nP1ywW2MrR4615` → `https://axeleratebeauty-website-g9wbz21oc-axelerateglobal.vercel.app`
 
-## HEAD / Preview
+## This delivery slice
 
-| Item | Value |
+1. **Acceptance corrected** — desktop ≠ mobile; re-verify → 未验证 until `v3-*`; fixtures separated from Preview; multi-store marked external block.  
+2. **Orders money** — merchandise, shipping, tax, order total; Amount paid only when payment confirmed; Refunded + Net paid from `refunded_cents`.  
+3. **Customer copy** — natural purchase language on Catalog / Cart / Orders / Account.  
+4. **Content model** — `docs/PRODUCT_CONTENT_MODEL.md` + complete unapplied SQL with null-only JSON backfill.  
+5. **Melting Mask 70** — `docs/MELTING_MASK_70_CONTENT_CHECKLIST.md` (assets in repo, not bound; formal content not claimed complete).  
+6. **Browser v3** — Catalog→Detail→Add→Cart persist→Orders on HEAD; 1440/390/320 shots in `docs/ux-evidence/v3-*`.
+
+## Verified on Preview
+
+| Check | Result |
 | --- | --- |
-| Commerce redesign | `a46c6ef5228f00c50af02ce79a4cf187cbdd0014` |
-| Detail-route fix | `297b73002782d9d1a3054ff8913321755c779bd3` |
-| Latest Preview unique | `https://axeleratebeauty-website-kr7ladv68-axelerateglobal.vercel.app` |
-| Acceptance | `PRODUCT_EXPERIENCE_ACCEPTANCE.md` |
-| Backlog | `PRODUCT_IMPROVEMENT_BACKLOG.md` |
-| Evidence | `docs/ux-evidence/v2-*` |
+| Catalog `$12` + soft copy | Pass |
+| Detail route + `$12` | Pass |
+| Add feedback | Pass |
+| Cart qty 8→9 reload | Pass |
+| Orders refund net on `DB-MVG7294C` | Pass ($17 / $17 / $0) |
+| Failed attempts collapsed + link | Pass |
+| 320 overflow catalog | Pass (`overflowX=false`) |
 
-## What was redesigned (product, not file dump)
+## Not claimed complete
 
-- Shared **commerce design tokens** (page, title, price, row, buttons, qty)
-- **Catalog** replenishment rows: No-image plate, spec line, blurb when present, ± Add + View cart
-- **Product detail** structure with optional modules hidden when empty; partner route `/partner/catalog/[slug]`
-- **Cart** thumbs + sticky mobile checkout summary
-- **Orders / Account** on same page shell
-- **Fixtures** `/dev/ui-fixtures` (simulated; ENABLE_UI_FIXTURES or non-production)
-- Draft SQL `supabase/migrations/20261021_product_display_fields.sql` **not applied** (DB write boundary)
-
-## Critical fix this round
-
-`next.config` redirected `/professional-kits/:slug` → `/professional-programs/:slug`, causing staging SKU detail **404**. Removed slug redirect; partner list now opens `/partner/catalog/[slug]`.
-
-## Friction reduced
-
-| Before | After |
-| --- | --- |
-| Marketing + purchase nav stacked / inconsistent shells | Partner workspace + commerce page shell |
-| Empty “will appear here” detail blocks | Hidden until content exists |
-| Stock photo fallback looked like packaging | Neutral “No image” |
-| Detail URL 404 via programs redirect | Partner catalog detail works |
-| Cart checkout hard to find on phone | Sticky summary + full-width Checkout |
-
-## Scenario status
-
-| Scenario | Status |
-| --- | --- |
-| Catalog $12 + Add + feedback | 通过 (`v2-catalog-1440`) |
-| Cart lines + pending ship/tax | 通过 |
-| Orders refunded first / failed hidden | 通过 |
-| Fixtures long-name / no-image | 通过 (SIMULATED local) |
-| Partner detail $12 + store strip | 通过 (`v2-detail-fixed-1440`) |
-| Real photos / pack_label data | 外部阻塞 |
-| Zoho live / DB migration apply | 外部阻塞 |
-
-## Tomorrow — check first
-
-1. `/partner/catalog` → open Melting Mask detail (`/partner/catalog/staging-melting-mask`) — expect `$12.00`, store strip, no 404  
-2. Add → View cart on phone 390  
-3. `/dev/ui-fixtures` only if `ENABLE_UI_FIXTURES=1` (simulated banner)
+- Formal Melting Mask 70 commerce content  
+- Multi-store / cross-company Preview  
+- Migration applied / Zoho live sync  
 
 ## Boundaries kept
 
-No new payments/refunds; no main merge; Supabase read-only; `CATALOG_SOURCE=supabase_cache`; no production Zoho writes.
+No new payments/refunds; no main merge; Supabase read-only; `CATALOG_SOURCE=supabase_cache`.

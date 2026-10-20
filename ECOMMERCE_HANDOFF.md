@@ -30,7 +30,9 @@ This increment does **not** deploy production, charge cards, send customer email
 - Partner product detail: `/partner/catalog/[slug]`. Public `/professional-kits` listing still redirects to programs; **slug detail is not redirected** (prior redirect caused staging SKU 404).
 - Content model: reuse `description` / `intended_use` / `contents` / `shipping_attributes.pack_label|unit_label`; hide empty modules. Draft columns in `supabase/migrations/20261021_product_display_fields.sql` (not applied).
 - Layout fixtures: `/dev/ui-fixtures` (local or `ENABLE_UI_FIXTURES=1`) — not purchasable.
-- Docs: `PRODUCT_EXPERIENCE_ACCEPTANCE.md`, `STAGING_OVERNIGHT_REPORT.md`, `PRODUCT_IMPROVEMENT_BACKLOG.md`, `docs/ZOHO_FIELD_MAP.md`, `docs/ux-evidence/`.
+- Docs: `PRODUCT_EXPERIENCE_ACCEPTANCE.md` (viewport-honest matrix), `STAGING_OVERNIGHT_REPORT.md`, `PRODUCT_IMPROVEMENT_BACKLOG.md`, `docs/PRODUCT_CONTENT_MODEL.md`, `docs/MELTING_MASK_70_CONTENT_CHECKLIST.md`, `docs/ZOHO_FIELD_MAP.md`, `docs/ux-evidence/v3-*`.
+- Orders UI shows merchandise / shipping / tax / order total; Amount paid only when confirmed; Refunded + Net paid from `refunded_cents`. Failed checkouts stay discoverable but collapsed.
+- Display-field migration `20261021_product_display_fields.sql` is complete and **unapplied**; app reads pack/unit/short from `shipping_attributes` until columns exist.
 - Payment, event, inventory, and refund RPCs revoke `PUBLIC` / `anon` / `authenticated` execute. `protect_profile_privileges` never treats `current_user` as caller authorization.
 - Inventory decrement locks the product row, uses a conditional quantity update, and deletes any movement if the update does not apply exactly one row.
 - Replayed `mark_order_paid` calls leave `partially_refunded` / `refunded` in place.
