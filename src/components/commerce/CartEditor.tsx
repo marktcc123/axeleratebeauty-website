@@ -53,37 +53,54 @@ export function CartEditor({
     savingRef.current = true;
     setSaving(true);
     setError(null);
-    const currentIds = new Set(latestRef.current.map((line) => line.productId));
-    const snapshot = [
-      ...latestRef.current.map((line) => ({ productId: line.productId, quantity: line.quantity })),
-      ...savedRef.current
-        .filter((item) => !currentIds.has(item.productId))
-        .map((item) => ({ productId: item.productId, quantity: 0 })),
-    ];
-    const result = await saveCartQuantities(snapshot);
-    if (result.error) {
-      const rolledBack = result.items.flatMap((item) => {
-        const meta = latestRef.current.find((line) => line.productId === item.productId)
-          ?? lines.find((line) => line.productId === item.productId);
-        return meta ? [{ ...meta, quantity: item.quantity }] : [];
-      });
-      latestRef.current = rolledBack;
-      savedRef.current = result.items;
-      setItems(rolledBack);
-      setSavedItems(result.items);
-      setError(result.error);
+    try {
+      while (true) {
+        saveAgain.current = false;
+        const currentIds = new Set(latestRef.current.map((line) => line.productId));
+        const snapshot = [
+          ...latestRef.current.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+          ...savedRef.current
+            .filter((item) => !currentIds.has(item.productId))
+            .map((item) => ({ productId: item.productId, quantity: 0 })),
+        ];
+        let result;
+        try {
+          result = await saveCartQuantities(snapshot);
+        } catch {
+          setError("Unable to update the cart.");
+          saveAgain.current = false;
+          return;
+        }
+        if (result.error) {
+          const rolledBack = result.items.flatMap((item) => {
+            const meta = latestRef.current.find((line) => line.productId === item.productId)
+              ?? lines.find((line) => line.productId === item.productId);
+            return meta ? [{ ...meta, quantity: item.quantity }] : [];
+          });
+          latestRef.current = rolledBack;
+          savedRef.current = result.items;
+          setItems(rolledBack);
+          setSavedItems(result.items);
+          setError(result.error);
+          saveAgain.current = false;
+          return;
+        }
+        savedRef.current = result.items;
+        setSavedItems(result.items);
+        const stillDirty = cartQuantitiesDirty(
+          latestRef.current.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+          result.items,
+        );
+        if (saveAgain.current || stillDirty) continue;
+        break;
+      }
+    } finally {
       savingRef.current = false;
       setSaving(false);
-      saveAgain.current = false;
-      return;
-    }
-    savedRef.current = result.items;
-    setSavedItems(result.items);
-    savingRef.current = false;
-    setSaving(false);
-    if (saveAgain.current || cartQuantitiesDirty(latestRef.current.map((line) => ({ productId: line.productId, quantity: line.quantity })), result.items)) {
-      saveAgain.current = false;
-      await runSave();
+      if (saveAgain.current) {
+        saveAgain.current = false;
+        saveTail.current = saveTail.current.then(runSave);
+      }
     }
   }
 

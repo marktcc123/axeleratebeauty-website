@@ -1,37 +1,62 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { CheckoutReturn } from "@/components/commerce/CheckoutReturn";
 import { PageIntro } from "@/components/site/PageIntro";
-import { createServiceSupabase } from "@/lib/supabase/server";
+import { asCheckoutReturnOrder, CHECKOUT_RETURN_SELECT, checkoutReturnKind, checkoutReturnTitle } from "@/lib/commerce/order-access";
+import { logOrderEvent } from "@/lib/commerce/order-log";
 import { getSession } from "@/lib/session";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export default async function CheckoutSuccessPage({
   searchParams,
 }: {
   searchParams: Promise<{ order?: string }>;
 }) {
-  const { order } = await searchParams;
+  const { order: orderNumber } = await searchParams;
   const session = await getSession();
-  const service = await createServiceSupabase();
-  const { data } = service && order && session.organizationId
-    ? await service
-        .from("orders")
-        .select("order_number, payment_status, status")
-        .eq("order_number", order)
-        .eq("organization_id", session.organizationId)
-        .maybeSingle()
-    : { data: null };
+  if (!session.userId) redirect("/partner/login");
+
+  const supabase = await createServerSupabase();
+  const lookup = supabase && orderNumber
+    ? await supabase.from("orders").select(CHECKOUT_RETURN_SELECT).eq("order_number", orderNumber).maybeSingle()
+    : { data: null, error: supabase ? null : { code: "not_configured" } };
+
+  const order = asCheckoutReturnOrder(lookup.data);
+  const kind = checkoutReturnKind({
+    queryError: Boolean(lookup.error) || !supabase,
+    order,
+    session,
+  });
+
+  if (kind === "query_failed") {
+    logOrderEvent({
+      stage: "order_status",
+      code: lookup.error?.code ?? "order_status_failed",
+      orderNumber: orderNumber ?? null,
+      organizationId: session.organizationId,
+    });
+  } else if (kind === "missing") {
+    logOrderEvent({
+      stage: "order_status",
+      code: "not_found",
+      orderNumber: orderNumber ?? null,
+      organizationId: session.organizationId,
+    });
+  } else if (order) {
+    logOrderEvent({
+      stage: "order_status",
+      code: kind,
+      orderId: order.id,
+      orderNumber: order.order_number,
+      organizationId: session.organizationId,
+    });
+  }
 
   return (
     <section className="bg-cream px-5 py-24 sm:px-8">
       <div className="mx-auto max-w-xl">
-        <PageIntro eyebrow="Checkout" title="Payment confirmation pending webhook.">
-          <p>
-            Reaching this page does not mark an order paid. Status updates only after Stripe
-            sends a verified webhook.
-          </p>
-        </PageIntro>
-        <p className="mt-8 text-stone-deep">
-          Order {data?.order_number ?? order ?? "unknown"} · payment status: {data?.payment_status ?? "not found"}
-        </p>
+        <PageIntro eyebrow="Checkout" title={checkoutReturnTitle(kind)} />
+        <CheckoutReturn kind={kind} orderNumber={order?.order_number ?? orderNumber ?? null} />
         <Link href="/partner/orders" className="mt-6 inline-block text-sm underline-offset-4 hover:underline">
           View order history
         </Link>

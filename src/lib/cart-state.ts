@@ -1,28 +1,64 @@
-import type { CartItem, CartState } from "@/lib/types";
+import type { CartItem, CartState, CheckoutClaim } from "@/lib/types";
+
+const MAX_CLEARED_ORDERS = 50;
+const MAX_CLAIMS = 5;
 
 export function emptyCart(): CartState {
-  return { items: [] };
+  return { items: [], version: 0, clearedOrderNumbers: [] };
+}
+
+function asCartItems(value: unknown): CartItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is CartItem => Boolean(item?.productId) && Number(item.quantity) > 0)
+    .map((item) => ({ productId: String(item.productId), quantity: Math.min(99, Math.max(1, Number(item.quantity))) }));
 }
 
 export function parseCart(raw: string | undefined): CartState {
   if (!raw) return emptyCart();
   try {
-    const parsed = JSON.parse(raw) as CartState;
+    const parsed = JSON.parse(raw) as Partial<CartState>;
     if (!parsed || !Array.isArray(parsed.items)) return emptyCart();
+    const version = Number.isInteger(parsed.version) && Number(parsed.version) >= 0 ? Number(parsed.version) : 0;
+    const clearedOrderNumbers = Array.isArray(parsed.clearedOrderNumbers)
+      ? parsed.clearedOrderNumbers.filter((value): value is string => typeof value === "string").slice(-MAX_CLEARED_ORDERS)
+      : [];
     return {
-      items: parsed.items
-        .filter((item): item is CartItem => Boolean(item?.productId) && Number(item.quantity) > 0)
-        .map((item) => ({ productId: String(item.productId), quantity: Math.min(99, Math.max(1, Number(item.quantity))) })),
+      items: asCartItems(parsed.items),
+      version,
+      clearedOrderNumbers,
     };
   } catch {
     return emptyCart();
   }
 }
 
+export function parseCheckoutClaims(raw: string | undefined): CheckoutClaim[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .flatMap((claim) => {
+        if (!claim || typeof claim !== "object") return [];
+        const record = claim as Partial<CheckoutClaim>;
+        if (typeof record.orderNumber !== "string" || record.orderNumber.length === 0) return [];
+        return [{
+          orderNumber: record.orderNumber,
+          items: asCartItems(record.items),
+          cartVersion: Number.isInteger(record.cartVersion) ? Number(record.cartVersion) : 0,
+        }];
+      })
+      .slice(-MAX_CLAIMS);
+  } catch {
+    return [];
+  }
+}
+
 export function upsertItem(cart: CartState, productId: string, quantity: number): CartState {
   const items = cart.items.filter((item) => item.productId !== productId);
   if (quantity > 0) items.push({ productId, quantity });
-  return { items };
+  return { ...cart, items };
 }
 
 export function cartQuantitiesDirty(local: CartItem[], saved: CartItem[]) {
@@ -44,4 +80,25 @@ export function applyCartQuantityUpdates(cart: CartState, updates: CartItem[]): 
     next = upsertItem(next, update.productId, update.quantity);
   }
   return next;
+}
+
+export function markOrderCleared(cart: CartState, orderNumber: string): CartState {
+  if (cart.clearedOrderNumbers.includes(orderNumber)) return cart;
+  return {
+    ...cart,
+    clearedOrderNumbers: [...cart.clearedOrderNumbers, orderNumber].slice(-MAX_CLEARED_ORDERS),
+  };
+}
+
+export function subtractCartItems(cart: CartState, purchased: CartItem[]): CartState {
+  let next = cart;
+  for (const item of purchased) {
+    const current = next.items.find((entry) => entry.productId === item.productId)?.quantity ?? 0;
+    next = upsertItem(next, item.productId, Math.max(0, current - item.quantity));
+  }
+  return next;
+}
+
+export function mergeCheckoutClaim(claims: CheckoutClaim[], claim: CheckoutClaim): CheckoutClaim[] {
+  return [...claims.filter((entry) => entry.orderNumber !== claim.orderNumber), claim].slice(-MAX_CLAIMS);
 }

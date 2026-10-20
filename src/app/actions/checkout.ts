@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { readCart } from "@/lib/cart-cookie";
+import { addCheckoutClaim, readCart } from "@/lib/cart-cookie";
 import { getAuthorizedProductsByIds } from "@/lib/catalog";
 import { isNextRedirectError, logCheckoutEvent, stripeErrorFields } from "@/lib/commerce/checkout-log";
 import { CommerceError, assertApprovedBuyer, cartTotals, pricedCart } from "@/lib/commerce/guards";
@@ -172,6 +172,12 @@ export async function startCheckout(
     code: "ok",
     orderId: order.id,
     orderNumber: order.order_number,
+  });
+
+  await addCheckoutClaim({
+    orderNumber: order.order_number,
+    items: cart.items,
+    cartVersion: cart.version,
   });
 
   let checkout;

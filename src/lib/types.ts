@@ -63,6 +63,14 @@ export type CartItem = {
 
 export type CartState = {
   items: CartItem[];
+  version: number;
+  clearedOrderNumbers: string[];
+};
+
+export type CheckoutClaim = {
+  orderNumber: string;
+  items: CartItem[];
+  cartVersion: number;
 };
 
 export type SessionContext = {

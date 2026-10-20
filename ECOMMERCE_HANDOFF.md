@@ -37,6 +37,8 @@ This increment does **not** deploy production, charge cards, send customer email
 - Cart quantity edits are optimistic on the client, then serialized to one cookie write of the latest snapshot. Checkout stays locked while quantity is dirty or saving. Checkout still re-prices from the server cart.
 - Checkout uses a client form + `useActionState`. Failures return a readable error; success still redirects to Stripe. Diagnostic logs record stage, code/status, and association IDs only.
 - Continue shopping points to `/partner/catalog`. Homepage revalidation was removed from quantity saves.
+- Order history treats query failure as an error, not an empty list. Line items come from order snapshots; reorder links come from the authorized catalog, not a nested `products` embed.
+- Checkout success shows processing, paid, or query failure from the server order. Cart cleanup runs only in a Server Action after the signed-in user can access a paid order, using the checkout snapshot and cart version. Pending payment does not clear the cart. Webhooks cannot clear the browser cookie.
 
 ## Architecture
 
@@ -178,6 +180,7 @@ Homepage now has two paths: Full Salon System consultation and professional logi
   - Staging seed creates Melting Mask 1200/1440/1728 and split Zoho IDs
   - Earlier catalog, privilege, claim, and settlement assertions
   - Cart quantity merge/dirty checks and checkout log redaction
+  - Order list failure vs empty vs ready, cross-org denial, paid-only cart subtract, and one-time cleared-order marker
 - `npm run lint` and `npm run build` are compiled separately; they do **not** replace the migration test.
 
 ## 尚未验证
@@ -194,3 +197,4 @@ Homepage now has two paths: Full Salon System consultation and professional logi
 - Production apply of any SQL in this branch
 - Real staging email delivery and first-click password recovery. Local tests do **not** prove the recovery inbox flow.
 - Browser cart quantity clicks, cookie persistence, and Stripe Checkout redirect. Local unit tests do **not** prove this UI.
+- Real webhook delivery driving the success-page refresh, and browser cart cleanup after Stripe return. Local unit tests do **not** prove this flow.

@@ -1,10 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { applyCartQuantityUpdates, readCart, upsertItem, writeCart } from "@/lib/cart-cookie";
+import {
+  applyCartQuantityUpdates,
+  readCart,
+  readCheckoutClaims,
+  upsertItem,
+  writeCart,
+  writeCheckoutClaims,
+} from "@/lib/cart-cookie";
+import { markOrderCleared, subtractCartItems } from "@/lib/cart-state";
 import { getAuthorizedProductsByIds, getPublishedProduct } from "@/lib/catalog";
+import { asCheckoutReturnOrder, canViewOrder, CHECKOUT_RETURN_SELECT, isPaymentConfirmed, purchasedQuantitiesToSubtract } from "@/lib/commerce/order-access";
+import { logOrderEvent } from "@/lib/commerce/order-log";
 import { CommerceError, normalizeQuantity } from "@/lib/commerce/guards";
 import { getSession } from "@/lib/session";
+import { createServerSupabase } from "@/lib/supabase/server";
 import type { CartItem } from "@/lib/types";
 import { canPurchase } from "@/lib/types";
 
@@ -71,4 +82,115 @@ export async function reorderProduct(slug: string) {
     return { error: "This product is not currently available to reorder." };
   }
   return addToCart(product.id, 1);
+}
+
+export async function reorderAuthorizedProduct(productId: string) {
+  const session = await getSession();
+  if (!canPurchase(session)) {
+    return { error: "Approved accounts can reorder from order history.", redirectTo: "/partner/login" };
+  }
+  const products = await getAuthorizedProductsByIds([productId], session);
+  const product = products[0];
+  if (!product?.reorderEligible || product.publicationStatus !== "active" || product.professionalPriceCents == null) {
+    return { error: "This product is not currently available to reorder." };
+  }
+  return addToCart(product.id, 1);
+}
+
+export async function clearPaidOrderFromCart(orderNumber: string) {
+  const session = await getSession();
+  if (!session.userId || !session.organizationId) {
+    return { error: "Sign in to update the cart.", cleared: false };
+  }
+  if (!orderNumber) {
+    return { error: "Missing order.", cleared: false };
+  }
+
+  const supabase = await createServerSupabase();
+  if (!supabase) {
+    logOrderEvent({ stage: "cart_clear", code: "not_configured", orderNumber });
+    return { error: "Cart cleanup is not configured.", cleared: false };
+  }
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select(CHECKOUT_RETURN_SELECT)
+    .eq("order_number", orderNumber)
+    .maybeSingle();
+
+  if (error) {
+    logOrderEvent({
+      stage: "cart_clear",
+      code: error.code ?? "order_lookup_failed",
+      orderNumber,
+      organizationId: session.organizationId,
+    });
+    return { error: "The order could not be verified.", cleared: false };
+  }
+
+  const order = asCheckoutReturnOrder(data);
+  if (!canViewOrder(session, order) || !order) {
+    logOrderEvent({
+      stage: "cart_clear",
+      code: "forbidden",
+      orderNumber,
+      organizationId: session.organizationId,
+    });
+    return { error: "That order is not available on this account.", cleared: false };
+  }
+
+  if (!isPaymentConfirmed(order.payment_status)) {
+    logOrderEvent({
+      stage: "cart_clear",
+      code: "pending",
+      orderId: order.id,
+      orderNumber: order.order_number,
+      organizationId: session.organizationId,
+    });
+    return { error: null, cleared: false };
+  }
+
+  const cart = await readCart();
+  if (cart.clearedOrderNumbers.includes(order.order_number)) {
+    logOrderEvent({
+      stage: "cart_clear",
+      code: "already_cleared",
+      orderId: order.id,
+      orderNumber: order.order_number,
+      organizationId: session.organizationId,
+    });
+    return { error: null, cleared: false };
+  }
+
+  const claims = await readCheckoutClaims();
+  const claim = claims.find((entry) => entry.orderNumber === order.order_number);
+  if (!claim) {
+    logOrderEvent({
+      stage: "cart_clear",
+      code: "missing_claim",
+      orderId: order.id,
+      orderNumber: order.order_number,
+      organizationId: session.organizationId,
+    });
+    return { error: null, cleared: false };
+  }
+
+  const paidItems = (order.order_items ?? []).flatMap((item) => (
+    item.product_id && item.quantity > 0
+      ? [{ productId: item.product_id, quantity: item.quantity }]
+      : []
+  ));
+  const purchased = purchasedQuantitiesToSubtract(claim.items, paidItems);
+  const next = markOrderCleared(subtractCartItems(cart, purchased), order.order_number);
+  await writeCart(next);
+  await writeCheckoutClaims(claims.filter((entry) => entry.orderNumber !== order.order_number));
+  revalidatePath("/cart");
+  logOrderEvent({
+    stage: "cart_clear",
+    code: "ok",
+    orderId: order.id,
+    orderNumber: order.order_number,
+    organizationId: session.organizationId,
+  });
+  return { error: null, cleared: true };
 }
