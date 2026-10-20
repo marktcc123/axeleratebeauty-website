@@ -13,7 +13,7 @@ import { canPurchase } from "@/lib/types";
 export function ProductCard({ product, session }: { product: Product; session: SessionContext }) {
   const approved = canPurchase(session);
   const image = productPrimaryImage(product);
-  const detailHref = `/professional-kits/${product.slug}`;
+  const detailHref = approved ? `/partner/catalog/${product.slug}` : `/professional-kits/${product.slug}`;
   const blurb = productListBlurb(product);
 
   return (

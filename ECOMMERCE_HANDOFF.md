@@ -26,9 +26,11 @@ This increment does **not** deploy production, charge cards, send customer email
 - Public catalog reads only `catalog_products` columns. Database errors are thrown (`CatalogError`); they are not converted into an empty warehouse.
 - `catalog_products` is still `security_invoker=false` so anonymous SELECT works while `products` has no browser policy. Independent migration `20261020065643_catalog_products_select_only.sql` revokes PUBLIC/anon/authenticated writes and leaves SELECT. The `security_definer_view` advisor remains expected. Staging read-back confirmed SELECT-only for browser roles.
 - Approved partner catalog uses `authorizedPriceLabel` (shows the resolved tier/location price). Public marketing still uses `publicPriceLabel` gated by `publicPriceVisible`. Do not flip `publicPriceVisible` globally to fix partner UI.
-- Partner portal core: **Catalog / Orders / Account** (Billing + Support + Profile hubbed on Account with redirects). Approved login lands on Catalog. Partner workspace header replaces marketing links on purchase routes; store strip shows the ordering location (single-store = label only; multi-store = change-on-select).
-- Catalog reorder UI uses denser `ReplenishmentRow` lists (name, SKU, authorized price, ± qty, Add), not marketing card grids.
-- Overnight + UX: `STAGING_NIGHT_TASK.md`, `STAGING_OVERNIGHT_REPORT.md`, `PRODUCT_IMPROVEMENT_BACKLOG.md`, Zoho map `docs/ZOHO_FIELD_MAP.md`, evidence `docs/ux-evidence/`.
+- Partner portal core: **Catalog / Orders / Account** (Billing + Support + Profile hubbed). Purchase UI uses shared `.commerce-*` tokens, `ProductImage` (neutral empty plate), `QtyControl`, `ProductDetailView`.
+- Partner product detail: `/partner/catalog/[slug]`. Public `/professional-kits` listing still redirects to programs; **slug detail is not redirected** (prior redirect caused staging SKU 404).
+- Content model: reuse `description` / `intended_use` / `contents` / `shipping_attributes.pack_label|unit_label`; hide empty modules. Draft columns in `supabase/migrations/20261021_product_display_fields.sql` (not applied).
+- Layout fixtures: `/dev/ui-fixtures` (local or `ENABLE_UI_FIXTURES=1`) — not purchasable.
+- Docs: `PRODUCT_EXPERIENCE_ACCEPTANCE.md`, `STAGING_OVERNIGHT_REPORT.md`, `PRODUCT_IMPROVEMENT_BACKLOG.md`, `docs/ZOHO_FIELD_MAP.md`, `docs/ux-evidence/`.
 - Payment, event, inventory, and refund RPCs revoke `PUBLIC` / `anon` / `authenticated` execute. `protect_profile_privileges` never treats `current_user` as caller authorization.
 - Inventory decrement locks the product row, uses a conditional quantity update, and deletes any movement if the update does not apply exactly one row.
 - Replayed `mark_order_paid` calls leave `partially_refunded` / `refunded` in place.

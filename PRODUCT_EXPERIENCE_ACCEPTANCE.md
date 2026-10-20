@@ -7,8 +7,8 @@ Preview: https://axeleratebeauty-website-git-feature-phas-590110-axelerateglobal
 Statuses: **通过** · **待改善** · **外部阻塞** · **不适用**  
 Rule: “page opens” is never enough for 通过.
 
-Design commit under review: *(filled after push)*  
-Evidence: `docs/ux-evidence/` (filename includes page + viewport; fixture shots labeled simulated)
+Design commits: `a46c6ef` (commerce system) + follow-up detail-route fix  
+Evidence: `docs/ux-evidence/v2-*` (fixture shots end with `-SIMULATED`)
 
 ## Design rules (implemented)
 
@@ -51,7 +51,7 @@ Evidence: `docs/ux-evidence/` (filename includes page + viewport; fixture shots 
 | 移动端 | 待改善 | Verify 390/320 after deploy |
 | 权限/数据 | 通过 | Authorized `$12` only when approved |
 
-### Product detail `/professional-kits/[slug]`
+### Product detail `/partner/catalog/[slug]` (purchase) + `/professional-kits/[slug]` (public)
 
 | Dimension | Status | Notes |
 | --- | --- | --- |
@@ -59,10 +59,10 @@ Evidence: `docs/ux-evidence/` (filename includes page + viewport; fixture shots 
 | 文字排版 | 通过 | commerce-title; prose width |
 | 图片区域 | 通过 | contain; optional gallery thumbs |
 | 内容完整性 | 通过 | Optional sections hidden when empty |
-| 核心操作 | 通过 | Qty + Add + View cart; Back to catalog |
+| 核心操作 | 通过 | Partner list links to `/partner/catalog/[slug]` |
 | 状态反馈 | 通过 | Add feedback |
-| 移动端 | 待改善 | Post-deploy |
-| 权限/数据 | 通过 | Public: approval copy; approved: $ |
+| 移动端 | 待改善 | Re-check after detail-route fix deploy |
+| 权限/数据 | 通过 | Removed bad redirect kits→programs/:slug (was 404) |
 
 ### Cart `/cart`
 

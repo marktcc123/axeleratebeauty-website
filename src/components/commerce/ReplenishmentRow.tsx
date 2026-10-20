@@ -23,7 +23,7 @@ export function ReplenishmentRow({ product }: { product: Product }) {
   const [message, setMessage] = useState<string | null>(null);
   const { unavailable, canAdd, stockHint } = replenishmentRowState(product);
   const image = productPrimaryImage(product);
-  const detailHref = `/professional-kits/${product.slug}`;
+  const detailHref = `/partner/catalog/${product.slug}`;
   const blurb = productListBlurb(product);
   const stock = inventoryCustomerLabel(product.inventoryStatus);
 
