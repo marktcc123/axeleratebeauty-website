@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AddToCartButton } from "@/components/commerce/AddToCartButton";
-import { Media } from "@/components/Media";
+import { CommercePage } from "@/components/commerce/CommercePage";
+import { PartnerChrome } from "@/components/commerce/PartnerChrome";
+import { ProductImage } from "@/components/commerce/ProductImage";
 import { getAuthorizedProductsByIds, getProductsByIds, getPublishedProduct } from "@/lib/catalog";
 import { authorizedPriceLabel, publicPriceLabel } from "@/lib/commerce/guards";
+import {
+  inventoryCustomerLabel,
+  productPackLabel,
+  productPrimaryImage,
+  productUnitLabel,
+} from "@/lib/commerce/product-presentation";
 import { getSession } from "@/lib/session";
 import { canPurchase } from "@/lib/types";
 
@@ -19,90 +27,139 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     : [published];
   const product = priced ?? published;
   const related = await getProductsByIds(product.relatedProductIds);
-  const image = product.images[0] ?? "/images/product-line.webp";
+  const primary = productPrimaryImage(product);
+  const gallery = product.images.filter((src) => typeof src === "string" && src.trim()).map((src) => src.trim());
+  const pack = productPackLabel(product);
+  const unit = productUnitLabel(product);
+  const stock = inventoryCustomerLabel(product.inventoryStatus);
+  const showPurchase = Boolean(session.userId);
 
   return (
-    <section className="bg-cream px-5 py-24 sm:px-8 sm:py-32">
-      <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2">
-        <Media src={image} alt={product.name} width={1000} height={1000} sizes="(max-width: 1024px) 100vw, 560px" className="bg-sand-50" />
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">{product.sku}</p>
-          <h1 className="mt-3 font-serif text-4xl text-ink">{product.name}</h1>
-          <p className="mt-4 text-lg text-muted">{product.description}</p>
-          <p className="mt-6 text-stone-deep">
-            {approved ? authorizedPriceLabel(product) : publicPriceLabel(product)}
-          </p>
-          <p className="mt-2 text-sm text-muted">
-            Availability: {product.inventoryStatus.replaceAll("_", " ")}
-          </p>
-          <div className="mt-8">
-            {approved && product.professionalPriceCents != null ? (
-              <AddToCartButton productId={product.id} allowQuantity />
-            ) : approved ? (
-              <p className="text-sm text-muted">Price pending for this store. Purchasing is unavailable until a valid tier price is assigned.</p>
-            ) : (
-              <Link href="/partner/register" className="inline-block bg-charcoal px-5 py-3 text-sm text-cream">
-                Register or log in to purchase
+    <>
+      {showPurchase ? <PartnerChrome session={session} /> : null}
+      <CommercePage>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-14">
+          <div className="space-y-3">
+            <ProductImage
+              src={primary}
+              alt={product.name}
+              sizes="(max-width: 1024px) 100vw, 560px"
+              priority
+              className="max-w-xl"
+            />
+            {gallery.length > 1 ? (
+              <ul className="grid grid-cols-4 gap-2 sm:max-w-xl">
+                {gallery.slice(0, 4).map((src) => (
+                  <li key={src}>
+                    <ProductImage src={src} alt="" sizes="120px" />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+
+          <div className="min-w-0">
+            <p className="commerce-eyebrow">{product.category.replaceAll("_", " ")}</p>
+            <h1 className="commerce-title mt-2 text-balance">{product.name}</h1>
+            <p className="commerce-meta mt-3">SKU {product.sku}</p>
+            {pack ? <p className="mt-2 text-sm text-stone-deep">{pack}</p> : null}
+            {unit ? <p className="commerce-meta mt-1">Sold {unit}</p> : null}
+
+            <p className="commerce-price mt-6">
+              {approved ? authorizedPriceLabel(product) : publicPriceLabel(product)}
+            </p>
+            {stock ? <p className="commerce-meta mt-2">{stock}</p> : null}
+
+            {product.description?.trim() ? (
+              <p className="mt-6 max-w-prose text-base leading-relaxed text-muted">{product.description.trim()}</p>
+            ) : null}
+
+            <div className="mt-8">
+              {approved && product.professionalPriceCents != null ? (
+                <AddToCartButton productId={product.id} allowQuantity productName={product.name} />
+              ) : approved ? (
+                <p className="text-sm text-muted">
+                  No valid price for this store. Purchasing stays locked until a tier price is assigned.
+                </p>
+              ) : (
+                <Link href="/partner/login" className="commerce-btn inline-flex">
+                  Professional login to purchase
+                </Link>
+              )}
+            </div>
+
+            {approved ? (
+              <Link href="/partner/catalog" className="mt-6 inline-block text-sm underline-offset-4 hover:underline">
+                Back to catalog
               </Link>
-            )}
+            ) : null}
           </div>
         </div>
-      </div>
 
-      <div className="mx-auto mt-16 grid max-w-6xl gap-10 md:grid-cols-2">
-        <div>
-          <h2 className="font-serif text-2xl text-ink">Professional use</h2>
-          <p className="mt-3 text-muted">{product.intendedUse ?? "Approved professional-use notes will appear here."}</p>
+        <div className="mt-16 grid gap-10 border-t border-sand-200 pt-12 md:grid-cols-2">
+          {product.intendedUse?.trim() ? (
+            <section>
+              <h2 className="font-serif text-2xl text-ink">Professional use</h2>
+              <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.intendedUse.trim()}</p>
+            </section>
+          ) : null}
+
+          {product.contents.length > 0 ? (
+            <section>
+              <h2 className="font-serif text-2xl text-ink">Package contents</h2>
+              <ul className="mt-3 space-y-2 text-muted">
+                {product.contents.map((item) => (
+                  <li key={`${item.sku ?? ""}-${item.name}`}>
+                    {item.name}
+                    {item.quantity ? ` · ${item.quantity}` : ""}
+                    {item.sku ? ` · ${item.sku}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {product.usageNotes?.trim() ? (
+            <section>
+              <h2 className="font-serif text-2xl text-ink">Usage</h2>
+              <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.usageNotes.trim()}</p>
+            </section>
+          ) : null}
+
+          {product.precautions?.trim() ? (
+            <section>
+              <h2 className="font-serif text-2xl text-ink">Precautions</h2>
+              <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.precautions.trim()}</p>
+            </section>
+          ) : null}
+
+          {product.highlights.length > 0 ? (
+            <section>
+              <h2 className="font-serif text-2xl text-ink">Highlights</h2>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
+                {product.highlights.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
-        <div>
-          <h2 className="font-serif text-2xl text-ink">Package contents</h2>
-          {product.contents.length === 0 ? (
-            <p className="mt-3 text-muted">SKU quantities will be listed after they are approved.</p>
-          ) : (
-            <ul className="mt-3 space-y-2 text-muted">
-              {product.contents.map((item) => (
-                <li key={`${item.sku}-${item.name}`}>
-                  {item.name}
-                  {item.quantity ? ` · ${item.quantity}` : ""}
-                  {item.sku ? ` · ${item.sku}` : ""}
+
+        {related.length > 0 ? (
+          <div className="mt-16 border-t border-sand-200 pt-12">
+            <h2 className="font-serif text-2xl text-ink">Related products</h2>
+            <ul className="mt-4 space-y-2">
+              {related.map((item) => (
+                <li key={item.id}>
+                  <Link href={`/professional-kits/${item.slug}`} className="underline-offset-4 hover:underline">
+                    {item.name}
+                  </Link>
                 </li>
               ))}
             </ul>
-          )}
-        </div>
-        <div>
-          <h2 className="font-serif text-2xl text-ink">Usage</h2>
-          <p className="mt-3 text-muted">{product.usageNotes ?? "Linked documentation will be added when approved."}</p>
-        </div>
-        <div>
-          <h2 className="font-serif text-2xl text-ink">Precautions</h2>
-          <p className="mt-3 text-muted">{product.precautions ?? "Only approved precautions will be published."}</p>
-        </div>
-      </div>
-
-      <div className="mx-auto mt-16 max-w-6xl">
-        <h2 className="font-serif text-2xl text-ink">Questions</h2>
-        <p className="mt-3 max-w-2xl text-muted">
-          Product-specific FAQs will appear here after they are approved. For purchasing or
-          professional-use questions, contact partner support.
-        </p>
-        <Link href="/contact" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
-          Contact partner support
-        </Link>
-      </div>
-
-      {related.length > 0 && (
-        <div className="mx-auto mt-16 max-w-6xl">
-          <h2 className="font-serif text-2xl text-ink">Related approved products</h2>
-          <div className="mt-4 flex flex-col gap-2">
-            {related.map((item) => (
-              <Link key={item.id} href={`/professional-kits/${item.slug}`} className="underline-offset-4 hover:underline">
-                {item.name}
-              </Link>
-            ))}
           </div>
-        </div>
-      )}
-    </section>
+        ) : null}
+      </CommercePage>
+    </>
   );
 }

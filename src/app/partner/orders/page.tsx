@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CommerceHeader, CommercePage } from "@/components/commerce/CommercePage";
 import { ReorderButton } from "@/components/commerce/ReorderButton";
 import { StatusBadge } from "@/components/commerce/StatusBadge";
 import { CatalogError, getAuthorizedProductsByIds } from "@/lib/catalog";
@@ -109,14 +110,12 @@ export default async function OrdersPage({
   };
 
   return (
-    <section className="bg-cream px-5 py-10 sm:px-8 sm:py-14">
-      <div className="mx-auto max-w-6xl">
-        <header className="max-w-3xl">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Orders</p>
-          <h1 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">Order history</h1>
-          <p className="mt-3 text-sm text-muted sm:text-base">
-            Payment and refund status come from confirmed events. Reorder uses today&apos;s authorized price, not the historical line price.
-          </p>
+    <CommercePage>
+        <CommerceHeader
+          eyebrow="Orders"
+          title="Order history"
+          description="Payment and refund status come from confirmed events. Reorder uses today's authorized price, not the historical line price."
+        />
           {failedCount > 0 ? (
             <p className="mt-4 text-sm text-muted">
               {includeFailed ? (
@@ -136,7 +135,6 @@ export default async function OrdersPage({
               )}
             </p>
           ) : null}
-        </header>
 
         {classified.status === "error" ? (
           <p className="mt-10 text-sm text-accent-tac" role="alert">
@@ -230,7 +228,6 @@ export default async function OrdersPage({
         <Link href="/partner/catalog" className="mt-8 inline-block text-sm underline-offset-4 hover:underline">
           Back to catalog
         </Link>
-      </div>
-    </section>
+    </CommercePage>
   );
 }

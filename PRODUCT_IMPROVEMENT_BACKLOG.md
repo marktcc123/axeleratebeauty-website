@@ -22,3 +22,7 @@ Living list from overnight / UX iteration. Status values: `done` | `in_progress`
 | B16 | Orders history flooded with failed checkout attempts | Playwright: dozens of `failed` before paid/refunded | Hard to find real orders | Default-hide failed; `?showFailed=1` toggle | None | done |
 | B17 | Staging SKUs 404 on public `/professional-kits/[slug]` for anon in some paths | Anon kit slug → 404 / programs alias | Low for buyers; marketing uses programs | Keep staging SKUs partner-catalog only | Content | deferred |
 | B18 | Footer still shows Professional Login while signed in | Snapshot footer links | Mild inconsistency | Session-aware footer later | None | deferred |
+| B19 | Staging SKUs lack pack_label / real photos | Catalog shows category fallback + No image | Lower compare quality | Operators fill shipping_attributes or apply display-field migration | Content + DB approve | blocked |
+| B20 | Detail page showed empty “will appear here” modules | Prior professional-kits copy | Noise / unprofessional | Hide empty optional sections | None | done |
+| B21 | Fake-looking fallback pack photo | `/images/product-line.webp` on empty images | Misread as this SKU | Neutral No image plate | None | done |
+| B22 | Commerce spacing/type inconsistent across pages | Mixed utility classes | Hard to scale to 3rd chain | `.commerce-*` tokens + shared components | None | done |

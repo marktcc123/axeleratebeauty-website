@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { addToCart } from "@/app/actions/cart";
-import { Media } from "@/components/Media";
+import { ProductImage } from "@/components/commerce/ProductImage";
+import { QtyControl } from "@/components/commerce/QtyControl";
+import { authorizedPriceLabel } from "@/lib/commerce/guards";
+import {
+  inventoryCustomerLabel,
+  productListBlurb,
+  productPrimaryImage,
+  productSpecLine,
+} from "@/lib/commerce/product-presentation";
 import type { Product } from "@/lib/types";
 import { replenishmentRowState } from "./replenishment-row-state";
 
@@ -13,67 +21,52 @@ export function ReplenishmentRow({ product }: { product: Product }) {
   const [qty, setQty] = useState(1);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const { priceLabel, unavailable, canAdd, stockHint } = replenishmentRowState(product);
-  const image = product.images[0] ?? "/images/product-line.webp";
+  const { unavailable, canAdd, stockHint } = replenishmentRowState(product);
+  const image = productPrimaryImage(product);
   const detailHref = `/professional-kits/${product.slug}`;
+  const blurb = productListBlurb(product);
+  const stock = inventoryCustomerLabel(product.inventoryStatus);
 
   return (
-    <article className="grid gap-4 border-b border-sand-200 py-5 sm:grid-cols-[4.5rem_minmax(0,1fr)_auto] sm:items-center">
-      <Link href={detailHref} className="block w-[4.5rem] shrink-0 bg-sand-50">
-        <Media
-          src={image}
-          alt={product.name}
-          width={144}
-          height={144}
-          sizes="72px"
-          className="aspect-square"
-          imgClassName="h-full w-full object-cover"
-        />
+    <article className="commerce-row">
+      <Link href={detailHref} className="block w-20 shrink-0 sm:w-auto">
+        <ProductImage src={image} alt={product.name} sizes="80px" />
       </Link>
+
       <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-muted">{product.category.replaceAll("_", " ")}</p>
-        <h2 className="mt-1 break-words font-serif text-xl text-ink sm:text-2xl">
+        <h2 className="break-words font-serif text-xl leading-snug text-ink sm:text-2xl">
           <Link href={detailHref} className="hover:underline">
             {product.name}
           </Link>
         </h2>
-        <p className="mt-1 break-all text-sm text-muted">SKU {product.sku}</p>
-        <p className="mt-2 text-base text-stone-deep">{priceLabel}</p>
+        <p className="commerce-meta mt-1">{productSpecLine(product)}</p>
+        {blurb ? <p className="mt-2 text-sm leading-relaxed text-muted">{blurb}</p> : null}
+        <p className="commerce-price mt-3">{authorizedPriceLabel(product)}</p>
+        {stock && !unavailable ? <p className="commerce-meta mt-1">{stock}</p> : null}
         {stockHint ? (
           <p className={`mt-1 text-sm ${unavailable ? "text-accent-tac" : "text-muted"}`}>{stockHint}</p>
         ) : null}
         {message ? (
-          <p className="mt-2 text-xs text-muted" role="status">
-            {message}
+          <p className="mt-2 text-sm text-muted" role="status">
+            {message}{" "}
+            <Link href="/cart" className="underline underline-offset-4">
+              View cart
+            </Link>
           </p>
         ) : null}
       </div>
-      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-        <button
-          type="button"
-          className="min-h-10 min-w-10 border border-sand-200 disabled:opacity-50"
-          aria-label={`Decrease quantity for ${product.name}`}
-          disabled={!canAdd || pending || qty <= 1}
-          onClick={() => setQty((value) => Math.max(1, value - 1))}
-        >
-          -
-        </button>
-        <span className="min-w-8 text-center" aria-live="polite">
-          {qty}
-        </span>
-        <button
-          type="button"
-          className="min-h-10 min-w-10 border border-sand-200 disabled:opacity-50"
-          aria-label={`Increase quantity for ${product.name}`}
-          disabled={!canAdd || pending || qty >= 99}
-          onClick={() => setQty((value) => Math.min(99, value + 1))}
-        >
-          +
-        </button>
+
+      <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+        <QtyControl
+          label={product.name}
+          value={qty}
+          disabled={!canAdd || pending}
+          onChange={setQty}
+        />
         <button
           type="button"
           disabled={!canAdd || pending}
-          className="min-h-10 bg-charcoal px-4 py-2 text-sm text-cream disabled:opacity-50"
+          className="commerce-btn"
           onClick={async () => {
             setPending(true);
             setMessage(null);
@@ -87,7 +80,7 @@ export function ReplenishmentRow({ product }: { product: Product }) {
               setMessage(result.error);
               return;
             }
-            setMessage(`Added ${qty} to cart.`);
+            setMessage(`Added ${qty}.`);
             router.refresh();
           }}
         >

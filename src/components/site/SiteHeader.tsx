@@ -20,6 +20,7 @@ const marketingLinks = [
 
 function isPartnerWorkspace(pathname: string) {
   if (pathname === "/cart") return true;
+  if (pathname.startsWith("/professional-kits")) return true;
   if (!pathname.startsWith("/partner")) return false;
   return !pathname.startsWith("/partner/login") && !pathname.startsWith("/partner/register");
 }

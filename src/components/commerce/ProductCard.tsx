@@ -1,48 +1,46 @@
 import Link from "next/link";
-import { Media } from "@/components/Media";
+import { AddToCartButton } from "@/components/commerce/AddToCartButton";
+import { ProductImage } from "@/components/commerce/ProductImage";
 import { authorizedPriceLabel, publicPriceLabel } from "@/lib/commerce/guards";
+import {
+  productListBlurb,
+  productPrimaryImage,
+  productSpecLine,
+} from "@/lib/commerce/product-presentation";
 import type { Product, SessionContext } from "@/lib/types";
 import { canPurchase } from "@/lib/types";
-import { AddToCartButton } from "./AddToCartButton";
 
 export function ProductCard({ product, session }: { product: Product; session: SessionContext }) {
   const approved = canPurchase(session);
-  const image = product.images[0] ?? "/images/product-line.webp";
+  const image = productPrimaryImage(product);
   const detailHref = `/professional-kits/${product.slug}`;
+  const blurb = productListBlurb(product);
 
   return (
     <article className="flex h-full flex-col border border-sand-200 bg-white">
-      <Link href={detailHref} className="block bg-sand-50">
-        <Media
-          src={image}
-          alt={product.name}
-          width={800}
-          height={800}
-          sizes="(max-width: 768px) 100vw, 360px"
-          className="aspect-square"
-          imgClassName="h-full w-full object-cover"
-        />
+      <Link href={detailHref} className="block">
+        <ProductImage src={image} alt={product.name} sizes="(max-width: 768px) 100vw, 360px" />
       </Link>
       <div className="flex flex-1 flex-col p-5">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-muted">{product.category.replaceAll("_", " ")}</p>
-        <h3 className="mt-2 font-serif text-2xl text-ink">
+        <h3 className="break-words font-serif text-2xl leading-snug text-ink">
           <Link href={detailHref}>{product.name}</Link>
         </h3>
-        {product.intendedUse && <p className="mt-2 text-sm leading-relaxed text-muted">{product.intendedUse}</p>}
-        <p className="mt-4 text-sm text-stone-deep">
+        <p className="commerce-meta mt-2">{productSpecLine(product)}</p>
+        {blurb ? <p className="mt-3 text-sm leading-relaxed text-muted">{blurb}</p> : null}
+        <p className="commerce-price mt-4">
           {approved ? authorizedPriceLabel(product) : publicPriceLabel(product)}
         </p>
-        <div className="mt-auto flex flex-wrap gap-3 pt-5">
+        <div className="mt-auto flex flex-wrap items-center gap-4 pt-5">
           <Link href={detailHref} className="text-sm underline-offset-4 hover:underline">
-            View Details
+            Details
           </Link>
           {approved && product.professionalPriceCents != null ? (
-            <AddToCartButton productId={product.id} />
+            <AddToCartButton productId={product.id} productName={product.name} />
           ) : approved ? (
             <span className="text-sm text-muted">Price pending for this store</span>
           ) : (
-            <Link href="/partner/register" className="text-sm text-muted">
-              Register to purchase
+            <Link href="/partner/login" className="text-sm text-muted">
+              Login to purchase
             </Link>
           )}
         </div>

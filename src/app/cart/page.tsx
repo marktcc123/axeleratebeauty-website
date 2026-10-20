@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { CartEditor } from "@/components/commerce/CartEditor";
+import { CommerceHeader, CommercePage } from "@/components/commerce/CommercePage";
 import { PartnerChrome } from "@/components/commerce/PartnerChrome";
 import { readCart } from "@/lib/cart-cookie";
 import { getAuthorizedProductsByIds } from "@/lib/catalog";
 import { isStripeCheckoutReady } from "@/lib/config";
+import { productPrimaryImage, productSpecLine } from "@/lib/commerce/product-presentation";
 import { getSession } from "@/lib/session";
 import { canPurchase } from "@/lib/types";
 
@@ -24,6 +26,8 @@ export default async function CartPage() {
         quantity: item.quantity,
         unitPriceCents: product.professionalPriceCents,
         outOfStock: product.inventoryStatus === "out_of_stock",
+        imageSrc: productPrimaryImage(product),
+        specLine: productSpecLine(product),
       },
     ];
   });
@@ -32,36 +36,35 @@ export default async function CartPage() {
   return (
     <>
       {session.userId ? <PartnerChrome session={session} /> : null}
-      <section className="bg-cream px-5 py-10 sm:px-8 sm:py-14">
-        <div className="mx-auto max-w-3xl">
-          <header>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Cart</p>
-            <h1 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">Review before checkout</h1>
-          </header>
+      <CommercePage narrow>
+        <CommerceHeader
+          eyebrow="Cart"
+          title="Review before checkout"
+          description="Quantities save as you change them. Checkout stays locked until the saved cart matches what you see."
+        />
 
-          {activeStore ? (
-            <div className="mt-6 space-y-1 text-sm text-stone-deep">
-              <p>
-                Ordering for <strong>{activeStore.name}</strong>
-                {activeStore.city ? ` · ${activeStore.city}` : ""}
-                {activeStore.state ? `, ${activeStore.state}` : ""}
-              </p>
-              <p className="text-muted">
-                Stripe Checkout collects the delivery address. Store name and city are not a complete shipping address.
-              </p>
-            </div>
-          ) : null}
+        {activeStore ? (
+          <div className="mt-6 space-y-1 text-sm text-stone-deep">
+            <p>
+              Ordering for <strong>{activeStore.name}</strong>
+              {activeStore.city ? ` · ${activeStore.city}` : ""}
+              {activeStore.state ? `, ${activeStore.state}` : ""}
+            </p>
+            <p className="text-muted">
+              Stripe Checkout collects the delivery address. Store name and city are not a complete shipping address.
+            </p>
+          </div>
+        ) : null}
 
-          <CartEditor
-            lines={lines}
-            checkoutReady={isStripeCheckoutReady()}
-            canCheckout={canPurchase(session)}
-          />
-          <Link href="/partner/catalog" className="mt-8 inline-block text-sm underline-offset-4 hover:underline">
-            Continue shopping
-          </Link>
-        </div>
-      </section>
+        <CartEditor
+          lines={lines}
+          checkoutReady={isStripeCheckoutReady()}
+          canCheckout={canPurchase(session)}
+        />
+        <Link href="/partner/catalog" className="mt-8 inline-block text-sm underline-offset-4 hover:underline">
+          Continue shopping
+        </Link>
+      </CommercePage>
     </>
   );
 }

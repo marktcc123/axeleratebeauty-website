@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { saveCartQuantities } from "@/app/actions/cart";
 import { startCheckout, type CheckoutFormState } from "@/app/actions/checkout";
+import { ProductImage } from "@/components/commerce/ProductImage";
+import { QtyControl } from "@/components/commerce/QtyControl";
 import { cartQuantitiesDirty } from "@/lib/cart-state";
 import { formatMoney, formatPendingMoney } from "@/lib/commerce/guards";
 import type { CartItem } from "@/lib/types";
@@ -14,6 +17,8 @@ export type CartEditorLine = {
   quantity: number;
   unitPriceCents: number | null;
   outOfStock: boolean;
+  imageSrc: string | null;
+  specLine: string;
 };
 
 export function CartEditor({
@@ -26,7 +31,9 @@ export function CartEditor({
   canCheckout: boolean;
 }) {
   const [items, setItems] = useState<CartEditorLine[]>(lines);
-  const [savedItems, setSavedItems] = useState<CartItem[]>(lines.map((line) => ({ productId: line.productId, quantity: line.quantity })));
+  const [savedItems, setSavedItems] = useState<CartItem[]>(
+    lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const latestRef = useRef(items);
@@ -34,7 +41,10 @@ export function CartEditor({
   const saveTail = useRef(Promise.resolve());
   const saveAgain = useRef(false);
   const savingRef = useRef(false);
-  const [checkoutState, checkoutAction, checkoutPending] = useActionState(startCheckout, { error: null } satisfies CheckoutFormState);
+  const [checkoutState, checkoutAction, checkoutPending] = useActionState(
+    startCheckout,
+    { error: null } satisfies CheckoutFormState,
+  );
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -73,8 +83,9 @@ export function CartEditor({
         }
         if (result.error) {
           const rolledBack = result.items.flatMap((item) => {
-            const meta = latestRef.current.find((line) => line.productId === item.productId)
-              ?? lines.find((line) => line.productId === item.productId);
+            const meta =
+              latestRef.current.find((line) => line.productId === item.productId) ??
+              lines.find((line) => line.productId === item.productId);
             return meta ? [{ ...meta, quantity: item.quantity }] : [];
           });
           latestRef.current = rolledBack;
@@ -108,9 +119,10 @@ export function CartEditor({
     const current = latestRef.current.find((line) => line.productId === productId);
     if (!current) return;
     const quantity = Math.max(0, Math.min(99, nextQuantity));
-    const next = quantity < 1
-      ? latestRef.current.filter((line) => line.productId !== productId)
-      : latestRef.current.map((line) => (line.productId === productId ? { ...line, quantity } : line));
+    const next =
+      quantity < 1
+        ? latestRef.current.filter((line) => line.productId !== productId)
+        : latestRef.current.map((line) => (line.productId === productId ? { ...line, quantity } : line));
     latestRef.current = next;
     setItems(next);
     startTransition(() => {
@@ -125,17 +137,27 @@ export function CartEditor({
   const missingPrice = items.some((line) => line.unitPriceCents == null);
   const outOfStock = items.some((line) => line.outOfStock);
   const subtotal = items.reduce((sum, line) => sum + (line.unitPriceCents ?? 0) * line.quantity, 0);
-  const checkoutLocked = !canCheckout || !checkoutReady || missingPrice || outOfStock || dirty || saving || items.length === 0;
+  const checkoutLocked =
+    !canCheckout || !checkoutReady || missingPrice || outOfStock || dirty || saving || items.length === 0;
 
   if (items.length === 0) {
     return (
       <div className="mt-8 space-y-4">
-        {error && <p className="text-sm text-accent-tac" role="alert">{error}</p>}
+        {error ? (
+          <p className="text-sm text-accent-tac" role="alert">
+            {error}
+          </p>
+        ) : null}
         <p className="text-muted">
           {canCheckout
             ? "Your cart is empty. Browse the authorized catalog to add products for this store."
             : "Your cart is empty. Purchasing unlocks after account approval."}
         </p>
+        {canCheckout ? (
+          <Link href="/partner/catalog" className="commerce-btn inline-flex">
+            Open catalog
+          </Link>
+        ) : null}
       </div>
     );
   }
@@ -144,47 +166,33 @@ export function CartEditor({
     <div className="mt-8 space-y-6">
       <div className="border-t border-sand-200">
         {items.map((line) => (
-          <div
-            key={line.productId}
-            className="grid gap-3 border-b border-sand-200 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-          >
+          <div key={line.productId} className="commerce-row !grid-cols-1 sm:!grid-cols-[4.5rem_minmax(0,1fr)_auto]">
+            <ProductImage src={line.imageSrc} alt={line.name} sizes="72px" className="w-[4.5rem]" />
             <div className="min-w-0">
               <p className="break-words font-serif text-xl text-ink">{line.name}</p>
-              <p className="break-all text-sm text-muted">{line.sku}</p>
-              <p className="mt-1 text-sm text-stone-deep">
+              <p className="commerce-meta mt-1">{line.specLine}</p>
+              <p className="mt-2 text-sm tabular-nums text-stone-deep">
                 {line.unitPriceCents != null
                   ? `${formatMoney(line.unitPriceCents)} each`
                   : "Authorized price is not available for the selected store."}
               </p>
               {line.unitPriceCents != null ? (
-                <p className="text-sm text-stone-deep">Line {formatMoney(line.unitPriceCents * line.quantity)}</p>
+                <p className="text-sm font-medium tabular-nums text-stone-deep">
+                  Line {formatMoney(line.unitPriceCents * line.quantity)}
+                </p>
               ) : null}
               {line.outOfStock ? <p className="text-sm text-accent-tac">Currently unavailable.</p> : null}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+              <QtyControl
+                label={line.name}
+                value={line.quantity}
+                min={0}
+                onChange={(next) => changeQuantity(line.productId, next)}
+              />
               <button
                 type="button"
-                className="min-h-10 min-w-10 border border-sand-200 disabled:opacity-50"
-                aria-label={`Decrease quantity for ${line.name}`}
-                onClick={() => changeQuantity(line.productId, line.quantity - 1)}
-              >
-                -
-              </button>
-              <span className="min-w-8 text-center" aria-live="polite">
-                {line.quantity}
-              </span>
-              <button
-                type="button"
-                className="min-h-10 min-w-10 border border-sand-200 disabled:opacity-50"
-                aria-label={`Increase quantity for ${line.name}`}
-                disabled={line.quantity >= 99}
-                onClick={() => changeQuantity(line.productId, line.quantity + 1)}
-              >
-                +
-              </button>
-              <button
-                type="button"
-                className="ml-2 text-sm underline underline-offset-4"
+                className="commerce-btn--ghost text-sm"
                 onClick={() => changeQuantity(line.productId, 0)}
               >
                 Remove
@@ -194,8 +202,8 @@ export function CartEditor({
         ))}
       </div>
 
-      <div className="space-y-2 border border-sand-200 bg-white p-4 text-sm text-stone-deep">
-        <div className="flex justify-between gap-4">
+      <div className="commerce-panel sticky bottom-3 z-10 space-y-2 text-sm text-stone-deep shadow-[0_-8px_24px_rgba(31,28,25,0.04)] sm:static sm:shadow-none">
+        <div className="flex justify-between gap-4 tabular-nums">
           <span>Merchandise</span>
           <span>{missingPrice ? "incomplete" : formatMoney(subtotal)}</span>
         </div>
@@ -207,7 +215,7 @@ export function CartEditor({
           <span>Tax</span>
           <span>{formatPendingMoney(null, true)}</span>
         </div>
-        <div className="flex justify-between gap-4 border-t border-sand-200 pt-2 font-medium">
+        <div className="flex justify-between gap-4 border-t border-sand-200 pt-2 font-medium tabular-nums">
           <span>Amount due at checkout</span>
           <span>{formatPendingMoney(null, true)}</span>
         </div>
@@ -216,32 +224,36 @@ export function CartEditor({
         ) : (
           <p className="text-muted">Shipping and tax are calculated in Stripe Checkout, never assumed as free.</p>
         )}
-      </div>
 
-      {error && <p className="text-sm text-accent-tac" role="alert">{error}</p>}
-      {checkoutState.error && <p className="text-sm text-accent-tac" role="alert">{checkoutState.error}</p>}
-      {missingPrice && (
-        <p className="text-sm text-muted">Checkout stays locked until every item has an authorized store price.</p>
-      )}
-      {outOfStock && <p className="text-sm text-muted">Remove unavailable items before checkout.</p>}
-      {!canCheckout ? (
-        <a href="/partner/login" className="inline-block bg-charcoal px-6 py-3 text-sm text-cream">
-          Sign in with an approved account
-        </a>
-      ) : !checkoutReady ? (
-        <p className="text-sm text-muted">
-          Checkout stays locked until Stripe tax and a shipping rate are configured.
-        </p>
-      ) : (
-        <form action={checkoutAction}>
-          <button
-            className="min-h-11 bg-charcoal px-6 py-3 text-sm text-cream disabled:opacity-60"
-            disabled={checkoutLocked || checkoutPending}
-          >
-            {checkoutPending ? "Opening secure checkout…" : "Checkout"}
-          </button>
-        </form>
-      )}
+        {error ? (
+          <p className="text-sm text-accent-tac" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {checkoutState.error ? (
+          <p className="text-sm text-accent-tac" role="alert">
+            {checkoutState.error}
+          </p>
+        ) : null}
+        {missingPrice ? (
+          <p className="text-muted">Checkout stays locked until every item has an authorized store price.</p>
+        ) : null}
+        {outOfStock ? <p className="text-muted">Remove unavailable items before checkout.</p> : null}
+
+        {!canCheckout ? (
+          <Link href="/partner/login" className="commerce-btn mt-2 inline-flex">
+            Sign in with an approved account
+          </Link>
+        ) : !checkoutReady ? (
+          <p className="text-muted">Checkout stays locked until Stripe tax and a shipping rate are configured.</p>
+        ) : (
+          <form action={checkoutAction} className="pt-2">
+            <button className="commerce-btn w-full sm:w-auto" disabled={checkoutLocked || checkoutPending}>
+              {checkoutPending ? "Opening secure checkout…" : "Checkout"}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

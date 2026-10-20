@@ -27,6 +27,8 @@ Status: **credentials not verified in this overnight run**. Keep `CATALOG_SOURCE
 | Store / location | Website | Website → CRM Contact/custom (future) | After approval | One order = one store |
 | Price tier | Website (or Commerce price book later) | Read for checkout | Offer resolve | Location > HQ > tier formula |
 | Stable SKU | Commerce (intended) / website cache now | Commerce → website | Catalog sync job | SKU is join key |
+| Pack / unit / short blurb | Commerce custom fields (verify API) or website `shipping_attributes` / future columns | Commerce → website after mapping | Catalog sync | Do not invent; hide empty UI modules. Draft SQL `20261021_product_display_fields.sql` not applied |
+| Product images | Commerce media URLs | Commerce → website `images[]` | Catalog sync | Empty → “No image” plate; never fake packaging |
 | Unit price at sale | Website checkout from authorized offer | Snapshot on order_items | Checkout create | Historical rows immutable |
 | Quantity | Website cart | Website → Books line (future) | Paid event | Paid snapshot wins |
 | Discount | Not implemented | — | — | Do not invent |

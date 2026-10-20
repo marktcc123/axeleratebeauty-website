@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CommerceHeader, CommercePage } from "@/components/commerce/CommercePage";
 import { InquiryForm } from "@/components/forms/InquiryForm";
 import { formatMoney } from "@/lib/commerce/guards";
 import { getSession } from "@/lib/session";
@@ -35,17 +36,12 @@ export default async function AccountPage({
   const installments = visible.filter((order) => order.order_kind === "contract_installment");
 
   return (
-    <section className="bg-cream px-5 py-10 sm:px-8 sm:py-14">
-      <div className="mx-auto max-w-3xl">
-        <header>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Account</p>
-          <h1 className="mt-2 font-serif text-3xl text-ink sm:text-4xl">
-            {organization?.name ?? "Business account"}
-          </h1>
-          <p className="mt-3 text-sm text-muted">
-            Profile, recent payments, and support stay in one place so purchasing stays on Catalog and Orders.
-          </p>
-        </header>
+    <CommercePage narrow>
+        <CommerceHeader
+          eyebrow="Account"
+          title={organization?.name ?? "Business account"}
+          description="Profile, recent payments, and support stay in one place so purchasing stays on Catalog and Orders."
+        />
 
         <nav aria-label="Account sections" className="mt-6 flex flex-wrap gap-4 text-sm">
           <a href="#profile" className={focus === "profile" ? "font-medium text-ink" : "text-muted underline-offset-4 hover:underline"}>
@@ -155,7 +151,6 @@ export default async function AccountPage({
             />
           </div>
         </section>
-      </div>
-    </section>
+    </CommercePage>
   );
 }
