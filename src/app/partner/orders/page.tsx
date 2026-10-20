@@ -7,6 +7,7 @@ import { CatalogError, getAuthorizedProductsByIds } from "@/lib/catalog";
 import { formatMoney, formatPendingMoney } from "@/lib/commerce/guards";
 import { classifyOrderList, PARTNER_ORDERS_SELECT } from "@/lib/commerce/order-access";
 import { logOrderEvent } from "@/lib/commerce/order-log";
+import { orderMoneyPresentation } from "@/lib/commerce/order-money";
 import { getSession } from "@/lib/session";
 import { createServerSupabase } from "@/lib/supabase/server";
 
@@ -25,6 +26,8 @@ type PartnerOrder = {
   subtotal_cents: number;
   tax_cents: number;
   shipping_cents: number;
+  total_cents: number;
+  refunded_cents: number | null;
   tax_pending: boolean | null;
   shipping_pending: boolean | null;
   payment_status: string;
@@ -75,6 +78,7 @@ export default async function OrdersPage({
 
   const authorized = classified.orders.filter((order) => !order.location_id || locationIds.includes(order.location_id));
   const failedCount = authorized.filter((order) => order.payment_status === "failed").length;
+  // Hide failed checkout noise only. Keep pending, paid, processing, and refunded orders.
   const visible = includeFailed
     ? authorized
     : authorized.filter((order) => order.payment_status !== "failed");
@@ -111,52 +115,54 @@ export default async function OrdersPage({
 
   return (
     <CommercePage>
-        <CommerceHeader
-          eyebrow="Orders"
-          title="Order history"
-          description="Payment and refund status come from confirmed events. Reorder uses today's authorized price, not the historical line price."
-        />
-          {failedCount > 0 ? (
-            <p className="mt-4 text-sm text-muted">
-              {includeFailed ? (
-                <>
-                  Showing failed checkout attempts.{" "}
-                  <Link href="/partner/orders" className="underline-offset-4 hover:underline">
-                    Hide failed attempts
-                  </Link>
-                </>
-              ) : (
-                <>
-                  {failedCount} failed checkout attempt{failedCount === 1 ? "" : "s"} hidden.{" "}
-                  <Link href="/partner/orders?showFailed=1" className="underline-offset-4 hover:underline">
-                    Show failed attempts
-                  </Link>
-                </>
-              )}
-            </p>
-          ) : null}
+      <CommerceHeader
+        eyebrow="Orders"
+        title="Your orders"
+        description="View your orders and payment status. Reorders use current prices and availability."
+      />
+      {failedCount > 0 ? (
+        <p className="mt-4 text-sm text-muted">
+          {includeFailed ? (
+            <>
+              Showing unsuccessful checkout attempts.{" "}
+              <Link href="/partner/orders" className="underline-offset-4 hover:underline">
+                Hide unsuccessful attempts
+              </Link>
+            </>
+          ) : (
+            <>
+              {failedCount} unsuccessful checkout attempt{failedCount === 1 ? "" : "s"} hidden.{" "}
+              <Link href="/partner/orders?showFailed=1" className="underline-offset-4 hover:underline">
+                Show unsuccessful attempts
+              </Link>
+            </>
+          )}
+        </p>
+      ) : null}
 
-        {classified.status === "error" ? (
-          <p className="mt-10 text-sm text-accent-tac" role="alert">
-            Orders could not be loaded. Try again in a moment.
-          </p>
-        ) : classified.status === "empty" || (visible.length === 0 && authorized.length === 0) ? (
-          <p className="mt-10 text-muted">No orders yet. Paid orders appear here after payment is confirmed.</p>
-        ) : visible.length === 0 ? (
-          <p className="mt-10 text-muted">
-            No paid or refunded orders yet.
-            {failedCount > 0 ? (
-              <>
-                {" "}
-                <Link href="/partner/orders?showFailed=1" className="underline-offset-4 hover:underline">
-                  Show {failedCount} failed attempt{failedCount === 1 ? "" : "s"}
-                </Link>
-              </>
-            ) : null}
-          </p>
-        ) : (
-          <div className="mt-8 space-y-4">
-            {visible.map((order) => (
+      {classified.status === "error" ? (
+        <p className="mt-10 text-sm text-accent-tac" role="alert">
+          Orders could not be loaded. Please try again shortly.
+        </p>
+      ) : classified.status === "empty" || (visible.length === 0 && authorized.length === 0) ? (
+        <p className="mt-10 text-muted">No orders yet. Confirmed orders appear here after checkout.</p>
+      ) : visible.length === 0 ? (
+        <p className="mt-10 text-muted">
+          No open or completed orders to show.
+          {failedCount > 0 ? (
+            <>
+              {" "}
+              <Link href="/partner/orders?showFailed=1" className="underline-offset-4 hover:underline">
+                Show {failedCount} unsuccessful attempt{failedCount === 1 ? "" : "s"}
+              </Link>
+            </>
+          ) : null}
+        </p>
+      ) : (
+        <div className="mt-8 space-y-4">
+          {visible.map((order) => {
+            const money = orderMoneyPresentation(order);
+            return (
               <article key={order.id} className="border border-sand-200 bg-white p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -175,23 +181,45 @@ export default async function OrdersPage({
                   {order.order_kind === "contract_installment" ? "Contract payment" : "Replenishment"}
                 </p>
 
-                <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
+                <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
                   <div>
                     <dt className="text-muted">Merchandise</dt>
-                    <dd className="text-stone-deep">{formatMoney(order.subtotal_cents)}</dd>
+                    <dd className="tabular-nums text-stone-deep">{formatMoney(money.merchandiseCents)}</dd>
                   </div>
                   <div>
                     <dt className="text-muted">Shipping</dt>
-                    <dd className="text-stone-deep">
-                      {formatPendingMoney(order.shipping_cents, Boolean(order.shipping_pending))}
+                    <dd className="tabular-nums text-stone-deep">
+                      {formatPendingMoney(money.shippingCents, money.shippingPending)}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-muted">Tax</dt>
-                    <dd className="text-stone-deep">
-                      {formatPendingMoney(order.tax_cents, Boolean(order.tax_pending))}
+                    <dd className="tabular-nums text-stone-deep">
+                      {formatPendingMoney(money.taxCents, money.taxPending)}
                     </dd>
                   </div>
+                  <div>
+                    <dt className="text-muted">{money.orderTotalCaption}</dt>
+                    <dd className="tabular-nums font-medium text-stone-deep">{formatMoney(money.orderTotalCents)}</dd>
+                  </div>
+                  {money.showPaidAmount && money.paidCents != null ? (
+                    <div>
+                      <dt className="text-muted">{money.paidCaption}</dt>
+                      <dd className="tabular-nums text-stone-deep">{formatMoney(money.paidCents)}</dd>
+                    </div>
+                  ) : null}
+                  {money.showRefunded && money.refundedCents != null ? (
+                    <div>
+                      <dt className="text-muted">Refunded</dt>
+                      <dd className="tabular-nums text-stone-deep">{formatMoney(money.refundedCents)}</dd>
+                    </div>
+                  ) : null}
+                  {money.showNetPaid && money.netPaidCents != null ? (
+                    <div>
+                      <dt className="text-muted">Net paid</dt>
+                      <dd className="tabular-nums font-medium text-stone-deep">{formatMoney(money.netPaidCents)}</dd>
+                    </div>
+                  ) : null}
                 </dl>
 
                 {order.tracking_number ? (
@@ -221,13 +249,14 @@ export default async function OrdersPage({
                   })}
                 </ul>
               </article>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
+      )}
 
-        <Link href="/partner/catalog" className="mt-8 inline-block text-sm underline-offset-4 hover:underline">
-          Back to catalog
-        </Link>
+      <Link href="/partner/catalog" className="mt-8 inline-block text-sm underline-offset-4 hover:underline">
+        Back to catalog
+      </Link>
     </CommercePage>
   );
 }

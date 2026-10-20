@@ -8,6 +8,9 @@ function base(overrides: Partial<Product> & Pick<Product, "id" | "sku" | "slug" 
   return {
     description: null,
     intendedUse: null,
+    shortDescription: null,
+    packLabel: null,
+    unitLabel: null,
     category: "professional_kit",
     highlights: [],
     contents: [],

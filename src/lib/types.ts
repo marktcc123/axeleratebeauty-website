@@ -35,6 +35,12 @@ export type Product = {
   name: string;
   description: string | null;
   intendedUse: string | null;
+  /** Optional list blurb; prefer over truncating description when present. */
+  shortDescription: string | null;
+  /** Customer pack/spec line, e.g. "70 g jar". */
+  packLabel: string | null;
+  /** Sell unit, e.g. "per jar". */
+  unitLabel: string | null;
   category: string;
   highlights: string[];
   contents: PackageContent[];

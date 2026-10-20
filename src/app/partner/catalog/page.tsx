@@ -29,8 +29,8 @@ export default async function PartnerCatalogPage({
     <CommercePage>
       <CommerceHeader
         eyebrow="Catalog"
-        title="Reorder for the selected store"
-        description="Your authorized unit price is shown for the store above. Open a product for details, or add here for routine replenishment."
+        title="Shop for this store"
+        description="Prices are for the store selected above. Add items here, or open a product for more detail."
       />
 
       <form className="mt-8 grid gap-3 sm:grid-cols-[1fr_11rem_auto]" action="/partner/catalog">
@@ -67,8 +67,8 @@ export default async function PartnerCatalogPage({
       ) : filtered.length === 0 ? (
         <p className="mt-10 text-muted">
           {query || category
-            ? "No products match this search. Clear filters to see the full authorized list."
-            : "No published products are available for this store yet."}
+              ? "No products match this search. Clear filters to see your full list."
+              : "No products are available for this store yet."}
         </p>
       ) : (
         <div className="mt-4 border-t border-sand-200">

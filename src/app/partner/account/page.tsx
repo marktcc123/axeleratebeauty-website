@@ -40,7 +40,7 @@ export default async function AccountPage({
         <CommerceHeader
           eyebrow="Account"
           title={organization?.name ?? "Business account"}
-          description="Profile, recent payments, and support stay in one place so purchasing stays on Catalog and Orders."
+          description="Your profile, recent payments, and support requests."
         />
 
         <nav aria-label="Account sections" className="mt-6 flex flex-wrap gap-4 text-sm">

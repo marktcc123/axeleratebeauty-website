@@ -20,6 +20,10 @@ type PublicProductRow = {
   name: string;
   description: string | null;
   intended_use: string | null;
+  /** Present only after display-fields migration + view refresh. */
+  short_description?: string | null;
+  pack_label?: string | null;
+  unit_label?: string | null;
   category: string;
   highlights: string[] | null;
   contents: Product["contents"] | null;
@@ -38,7 +42,12 @@ type PublicProductRow = {
   product_kind?: Product["productKind"];
 };
 
+function trimmedOrNull(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 function mapPublicProduct(row: PublicProductRow): Product {
+  const shipping = row.shipping_attributes ?? {};
   return {
     id: row.id,
     sku: row.sku,
@@ -46,6 +55,14 @@ function mapPublicProduct(row: PublicProductRow): Product {
     name: row.name,
     description: row.description,
     intendedUse: row.intended_use,
+    // Prefer dedicated columns when migration is applied; otherwise JSON transitional keys.
+    shortDescription:
+      trimmedOrNull(row.short_description) ?? trimmedOrNull(shipping.short_description),
+    packLabel: trimmedOrNull(row.pack_label) ?? trimmedOrNull(shipping.pack_label),
+    unitLabel:
+      trimmedOrNull(row.unit_label) ??
+      trimmedOrNull(shipping.unit_label) ??
+      trimmedOrNull(shipping.unit_of_measure),
     category: row.category,
     highlights: row.highlights ?? [],
     contents: row.contents ?? [],
@@ -57,7 +74,7 @@ function mapPublicProduct(row: PublicProductRow): Product {
     publicPriceVisible: false,
     inventoryStatus: row.inventory_status,
     availableQuantity: null,
-    shippingAttributes: row.shipping_attributes ?? {},
+    shippingAttributes: shipping,
     publicationStatus: row.publication_status,
     reorderEligible: row.reorder_eligible,
     relatedProductIds: row.related_product_ids ?? [],

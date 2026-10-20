@@ -39,8 +39,8 @@ export default async function CartPage() {
       <CommercePage narrow>
         <CommerceHeader
           eyebrow="Cart"
-          title="Review before checkout"
-          description="Quantities save as you change them. Checkout stays locked until the saved cart matches what you see."
+          title="Your cart"
+          description="Update quantities anytime. Checkout opens when your saved cart matches what you see."
         />
 
         {activeStore ? (

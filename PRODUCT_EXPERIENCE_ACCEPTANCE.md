@@ -2,142 +2,142 @@
 
 Branch: `feature/phase1-security-and-commerce-foundation`  
 Draft PR: https://github.com/marktcc123/axeleratebeauty-website/pull/1  
-Preview: https://axeleratebeauty-website-git-feature-phas-590110-axelerateglobal.vercel.app  
+Preview alias: https://axeleratebeauty-website-git-feature-phas-590110-axelerateglobal.vercel.app  
 
-Statuses: **通过** · **待改善** · **外部阻塞** · **不适用**  
-Rule: “page opens” is never enough for 通过.
+Statuses: **通过** · **未验证** · **待改善** · **外部阻塞** · **不适用**  
 
-Design commits: `a46c6ef` → `297b730` (+ polish commit if present)  
-Evidence: `docs/ux-evidence/v2-*` (fixture shots end with `-SIMULATED`)
+Rules:
+- Desktop screenshot ≠ mobile pass.
+- Items marked re-verify stay **未验证** until a fresh pass on the listed commit.
+- Single-store login ≠ multi-store switch or cross-company isolation.
+- Simulated fixtures (`*-SIMULATED`) never prove Preview catalog content.
 
-## Design rules (implemented)
+## Deploy under review
 
-| Token / pattern | Rule |
+| Field | Value |
 | --- | --- |
-| `.commerce-page` / `.commerce-container` | Shared pad + max width (`72rem` / narrow `40rem`) |
-| `.commerce-title` / `.commerce-lead` | Serif title clamp; muted lead max ~38rem |
-| `.commerce-price` | Tabular nums, semibold |
-| `.commerce-row` | List: image · copy · controls |
-| `.commerce-btn` / `.commerce-qty-btn` | 44px-class tap targets |
-| `ProductImage` | Stable aspect; empty → “No image” plate (not stock packaging) |
-| Empty detail modules | Hidden (no “待填写” placeholders) |
-| Pack / unit | `shipping_attributes.pack_label` / `unit_label` today; SQL draft `20261021_product_display_fields.sql` **未执行** |
+| Local HEAD at doc write | *(filled after push)* |
+| Preview deploy SHA | Must match HEAD; confirm after Vercel Ready |
+| Real Preview evidence prefix | `docs/ux-evidence/v3-*` |
+| Simulated layout only | `docs/ux-evidence/*-SIMULATED*` / `/dev/ui-fixtures` |
 
-## Page matrix
+## Evidence correction (prior v2 claims)
+
+| Prior claim | Correction |
+| --- | --- |
+| Home mobile 通过 via `v2-home-1440` | **未验证** — desktop cannot prove mobile |
+| Orders / Account mobile 通过 without 390 shot | **未验证** until `v3-*-390` |
+| Cart qty persist “prior walk; re-verify” | **未验证** until v3 cart reload pass |
+| Store switch 通过 | **未验证** — only single-store Staging Tier 1 exercised |
+| Cross-company isolation Preview | **外部阻塞** — no second identity |
+| Fixtures layout 通过 | **通过 (simulated only)** — separate from Preview |
+
+## Page matrix — Preview (real)
 
 ### Home `/`
 
-| Dimension | Status | Notes |
+| Dimension | Status | Evidence |
 | --- | --- | --- |
-| 信息层级 | 通过 | Brand + path CTAs; not a purchase dashboard |
-| 文字排版 | 通过 | Existing brand system |
-| 图片区域 | 通过 | Hero photography |
-| 内容完整性 | 通过 | Marketing only |
-| 核心操作 | 通过 | Consultation / programs / login |
+| 信息层级 | 通过 | Prior marketing structure unchanged |
+| 文字排版 | 通过 | Brand system |
+| 图片区域 | 通过 | Hero |
+| 内容完整性 | 通过 | Marketing |
+| 核心操作 | 通过 | CTAs |
 | 状态反馈 | 不适用 | |
-| 移动端 | 通过 | v2-home-1440; partner paths covered elsewhere |
-| 权限/数据 | 通过 | No pro $ |
+| 移动端 390 | 未验证 | Need `v3-home-390` |
+| 权限/数据 | 通过 | No pro $ on public marketing |
 
 ### Catalog `/partner/catalog`
 
-| Dimension | Status | Notes |
+| Dimension | Status | Evidence |
 | --- | --- | --- |
-| 信息层级 | 通过 | Store strip → title → search → rows |
-| 文字排版 | 通过 | commerce tokens; long names break-words |
-| 图片区域 | 通过 | Fixed square; No image when empty |
-| 内容完整性 | 外部阻塞 | Staging SKUs lack pack_label / photos (data) |
-| 核心操作 | 通过 | ± + Add + detail link |
-| 状态反馈 | 通过 | Added N + View cart |
-| 移动端 | 通过 | v2-catalog-390 / 320 / 768 |
-| 权限/数据 | 通过 | Authorized `$12` only when approved |
+| 信息层级 | 通过 | Store strip + rows (v2 + recheck v3) |
+| 文字排版 | 通过 | commerce tokens |
+| 图片区域 | 通过 | No image plate when empty |
+| 内容完整性 | 外部阻塞 | Formal Melting Mask 70 content not bound |
+| 核心操作 | 未验证 | Fresh Catalog→Detail→Add on HEAD |
+| 状态反馈 | 未验证 | Add + View cart on HEAD |
+| 移动端 390 / 320 | 未验证 | `v3-catalog-390`, `v3-catalog-320` |
+| 权限/数据 | 通过 | Tier 1 `$12` previously; confirm on HEAD |
+| 多门店切换 | 未验证 / 外部阻塞 | Single store only |
 
-### Product detail `/partner/catalog/[slug]` (purchase) + `/professional-kits/[slug]` (public)
+### Product detail `/partner/catalog/[slug]`
 
-| Dimension | Status | Notes |
+| Dimension | Status | Evidence |
 | --- | --- | --- |
-| 信息层级 | 通过 | Gallery · name · SKU · pack · price · CTA |
-| 文字排版 | 通过 | commerce-title; prose width |
-| 图片区域 | 通过 | contain; optional gallery thumbs |
-| 内容完整性 | 通过 | Optional sections hidden when empty |
-| 核心操作 | 通过 | `/partner/catalog/staging-melting-mask` Add + store strip |
-| 状态反馈 | 通过 | Add feedback |
-| 移动端 | 通过 | v2-detail-fixed-390 / 768 |
-| 权限/数据 | 通过 | `$12.00`; redirect fix verified |
+| 信息层级 | 通过 | Prior `v2-detail-fixed-*` on `297b730` |
+| 文字排版 | 通过 | |
+| 图片区域 | 通过 | No image until assets bound |
+| 内容完整性 | 外部阻塞 | See Melting Mask checklist |
+| 核心操作 | 未验证 | Recheck Add on HEAD |
+| 移动端 390 | 未验证 | `v3-detail-390` |
+| 权限/数据 | 通过 | Partner route (redirect fix) |
 
 ### Cart `/cart`
 
-| Dimension | Status | Notes |
+| Dimension | Status | Evidence |
 | --- | --- | --- |
-| 信息层级 | 通过 | Store · lines · sticky summary |
-| 文字排版 | 通过 | Spec + unit price + line total |
-| 图片区域 | 通过 | Thumb / No image |
-| 内容完整性 | 通过 | Ship/tax pending explicit |
-| 核心操作 | 通过 | Qty save lock; Checkout |
-| 状态反馈 | 通过 | Saving quantity… |
-| 移动端 | 通过 | Sticky summary bottom on small screens |
-| 权限/数据 | 通过 | Re-priced from authorized catalog |
+| 信息层级 | 通过 | |
+| 文字排版 | 通过 | |
+| 图片区域 | 通过 | |
+| 内容完整性 | 通过 | Ship/tax pending |
+| 核心操作 | 未验证 | Qty change + reload on HEAD |
+| 状态反馈 | 未验证 | Saving lock |
+| 移动端 390 | 未验证 | Sticky summary + safe area `v3-cart-390` |
+| 权限/数据 | 通过 | Server re-price |
 
 ### Orders `/partner/orders`
 
-| Dimension | Status | Notes |
+| Dimension | Status | Evidence |
 | --- | --- | --- |
-| 信息层级 | 通过 | Payment ≠ fulfillment badges |
-| 文字排版 | 通过 | Order # · store · money grid |
-| 图片区域 | 不适用 | Snapshot lines |
-| 内容完整性 | 通过 | Failed attempts hidden by default |
-| 核心操作 | 通过 | Reorder at current price |
-| 状态反馈 | 通过 | Reorder pending/error |
-| 移动端 | 通过 | Same shell; orders list readable |
-| 权限/数据 | 通过 | Location filtered |
+| 信息层级 | 待改善→实现 | Merchandise, shipping, tax, total, refunded, net paid |
+| 文字排版 | 未验证 | Customer copy simplified; confirm HEAD |
+| 图片区域 | 不适用 | |
+| 内容完整性 | 未验证 | Refunded order shows refund + net; unpaid not labeled paid |
+| 核心操作 | 通过 | Failed collapsed; pending/paid/refunded kept |
+| 移动端 390 | 未验证 | `v3-orders-390` |
+| 权限/数据 | 通过 | `refunded_cents` from DB |
 
 ### Account `/partner/account`
 
-| Dimension | Status | Notes |
+| Dimension | Status | Evidence |
 | --- | --- | --- |
-| 信息层级 | 通过 | Profile / Billing / Support hub |
-| 文字排版 | 通过 | commerce header |
-| 图片区域 | 不适用 | |
-| 内容完整性 | 通过 | |
-| 核心操作 | 通过 | Support form |
-| 状态反馈 | 不适用 | |
-| 移动端 | 通过 | Narrow commerce container |
-| 权限/数据 | 通过 | Org-scoped |
+| 信息层级 | 通过 | Hub |
+| 文字排版 | 未验证 | Softer copy on HEAD |
+| 移动端 390 | 未验证 | |
+| 权限/数据 | 通过 | Org scoped |
 
-### UI fixtures `/dev/ui-fixtures`
+## Simulated layout (separate)
 
-| Dimension | Status | Notes |
+| Item | Status | Evidence |
 | --- | --- | --- |
-| 信息层级 | 通过 | Banner: simulated only |
-| Layout stress | 通过 | v2-fixtures-*-SIMULATED (local ENABLE_UI_FIXTURES) |
-| 权限/数据 | 通过 | Not purchasable; gated off production default |
+| Long name / no image / OOS / no price / multi-line cart | 通过 (simulated) | `v2-fixtures-*-SIMULATED` on local fixtures; not Preview catalog |
 
-## Purchase flow checklist
+## Purchase flow (Preview HEAD)
 
-| Step | Status | Evidence |
-| --- | --- | --- |
-| Login → catalog (approved) | 通过 | Prior + retained |
-| Store visible / switch | 通过 | PartnerChrome |
-| Browse / search | 通过 | Catalog form |
-| Detail or quick add | 通过 | Row + detail page |
-| Add feedback + cart link | 通过 | Implemented |
-| Cart qty persist | 通过 | Prior walk; re-verify |
-| Checkout lock while dirty | 通过 | CartEditor |
-| Orders payment/refund/fulfillment | 通过 | Badges |
-| Reorder current price | 通过 | Server action |
-| No new pay/refund this run | 通过 | Boundary |
+| Step | Status |
+| --- | --- |
+| Login → catalog | 未验证 (session may persist; confirm) |
+| Store visible | 通过 (single store) |
+| Multi-store switch | 未验证 / 外部阻塞 |
+| Detail or quick add | 未验证 |
+| Cart qty persist after reload | 未验证 |
+| Orders money + refund net | 未验证 |
+| No new pay/refund | 通过 (boundary) |
 
-## External blocks
+## Content / migration
 
 | Item | Status |
 | --- | --- |
-| Real product photography & pack copy for staging SKUs | 外部阻塞 (content) |
-| Apply `20261021_product_display_fields.sql` | 外部阻塞 (DB write) |
-| Zoho live Commerce content sync | 外部阻塞 (credentials) |
-| Multi-store hosted identity | 外部阻塞 (test accounts) |
-| Stripe Tax registrations | 外部阻塞 |
+| Content model doc | `docs/PRODUCT_CONTENT_MODEL.md` |
+| Melting Mask 70 checklist | `docs/MELTING_MASK_70_CONTENT_CHECKLIST.md` |
+| Migration SQL (unapplied) | `supabase/migrations/20261021_product_display_fields.sql` |
+| Formal product content complete | **否** — layout only |
 
-## Tomorrow — open first
+## External blocks
 
-1. `/partner/catalog` @ 1440 & 390  
-2. A kit detail with partner chrome + Add → View cart  
-3. Non-empty `/cart` sticky summary on phone  
+- Real Melting Mask 70 commerce bind (images, pack, unit, approved copy)
+- Apply display-fields migration on staging
+- Zoho credentials / live Commerce sync
+- Multi-store + cross-company hosted identities
+- Stripe Tax registrations

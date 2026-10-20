@@ -27,6 +27,8 @@ const session: SessionContext = {
 describe("partner order access", () => {
   it("does not embed products into the order history query", () => {
     expect(PARTNER_ORDERS_SELECT).toContain("subtotal_cents");
+    expect(PARTNER_ORDERS_SELECT).toContain("total_cents");
+    expect(PARTNER_ORDERS_SELECT).toContain("refunded_cents");
     expect(PARTNER_ORDERS_SELECT).toContain("order_items(name, quantity, sku, product_id, unit_price_cents)");
     expect(PARTNER_ORDERS_SELECT).not.toContain("products(");
     expect(CHECKOUT_RETURN_SELECT).not.toContain("products(");

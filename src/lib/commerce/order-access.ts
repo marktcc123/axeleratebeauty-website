@@ -1,7 +1,7 @@
 import { canAccessLocation, type CartItem, type SessionContext } from "@/lib/types";
 
 export const PARTNER_ORDERS_SELECT =
-  "id, order_number, created_at, subtotal_cents, total_cents, tax_cents, shipping_cents, tax_pending, shipping_pending, payment_status, fulfillment_status, status, tracking_number, order_kind, location_id, organization_id, order_items(name, quantity, sku, product_id, unit_price_cents)";
+  "id, order_number, created_at, subtotal_cents, total_cents, tax_cents, shipping_cents, refunded_cents, tax_pending, shipping_pending, payment_status, fulfillment_status, status, tracking_number, order_kind, location_id, organization_id, order_items(name, quantity, sku, product_id, unit_price_cents)";
 
 export const CHECKOUT_RETURN_SELECT =
   "id, order_number, payment_status, status, organization_id, location_id, order_items(product_id, quantity)";

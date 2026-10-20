@@ -15,6 +15,9 @@ const base = {
   shippingAttributes: {} as Record<string, unknown>,
   intendedUse: null as string | null,
   description: null as string | null,
+  shortDescription: null as string | null,
+  packLabel: null as string | null,
+  unitLabel: null as string | null,
   highlights: [] as string[],
   images: [] as string[],
 };
