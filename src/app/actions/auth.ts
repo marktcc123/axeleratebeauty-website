@@ -3,6 +3,9 @@
 import { createHash, randomBytes } from "crypto";
 import { redirect } from "next/navigation";
 import { writeActiveLocationId } from "@/lib/active-location";
+import { authCallbackUrl, canUpdatePassword, formEmail, formPassword } from "@/lib/auth/paths";
+import { classifyLoginFailure, classifyResetSendError, AUTH_STATUS_MESSAGES } from "@/lib/auth/messages";
+import { logAuthEvent } from "@/lib/auth/log";
 import { isSupabaseConfigured, siteUrl } from "@/lib/config";
 import { checkRateLimit, clientKey } from "@/lib/rate-limit";
 import { createServerSupabase, createServiceSupabase } from "@/lib/supabase/server";
@@ -49,8 +52,8 @@ export async function registerBusiness(formData: FormData) {
     return { error: "Account services are not configured yet." };
   }
 
-  const email = formText(formData, "email").toLowerCase();
-  const password = formText(formData, "password");
+  const email = formEmail(formData);
+  const password = formPassword(formData);
   const fullName = formText(formData, "fullName");
   const businessName = formText(formData, "businessName");
   const phone = formText(formData, "phone");
@@ -116,7 +119,7 @@ export async function registerBusiness(formData: FormData) {
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: `${siteUrl()}/auth/callback?next=/partner/dashboard`,
+      emailRedirectTo: authCallbackUrl(siteUrl(), "/partner/dashboard"),
     },
   });
   if (error || !data.user) {
@@ -197,18 +200,26 @@ export async function registerBusiness(formData: FormData) {
 
 export async function loginBusiness(formData: FormData) {
   if (!isSupabaseConfigured()) {
+    logAuthEvent({ stage: "login", code: "not_configured", configured: false });
     return { error: "Account services are not configured yet." };
   }
-  const email = formText(formData, "email").toLowerCase();
-  const password = formText(formData, "password");
+  const email = formEmail(formData);
+  const password = formPassword(formData);
   const limited = checkRateLimit(clientKey("login", email), 10, 15 * 60 * 1000);
   if (!limited.ok) return { error: "Too many sign-in attempts. Please wait and try again." };
 
   const supabase = await createServerSupabase();
-  if (!supabase) return { error: "Account services are not configured yet." };
+  if (!supabase) {
+    logAuthEvent({ stage: "login", code: "not_configured", configured: false });
+    return { error: "Account services are not configured yet." };
+  }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: "Invalid email or password." };
+  if (error) {
+    const classified = classifyLoginFailure(error);
+    logAuthEvent({ stage: "login", code: classified.logCode, status: error.status, configured: true });
+    return { error: classified.userMessage };
+  }
   redirect("/partner/dashboard");
 }
 
@@ -221,25 +232,63 @@ export async function logoutBusiness() {
 
 export async function requestPasswordReset(formData: FormData) {
   if (!isSupabaseConfigured()) {
-    return { error: "Account services are not configured yet." };
+    logAuthEvent({ stage: "password_reset_request", code: "not_configured", configured: false });
+    return { error: "Password reset is temporarily unavailable. Try again later." };
   }
-  const email = formText(formData, "email").toLowerCase();
+  const email = formEmail(formData);
+  if (!email) return { error: "Enter the business email on the account." };
+  const limited = checkRateLimit(clientKey("password_reset", email), 5, 15 * 60 * 1000);
+  if (!limited.ok) {
+    logAuthEvent({ stage: "password_reset_request", code: "rate_limited", status: 429, configured: true });
+    return { error: "Please wait before requesting another reset email." };
+  }
+
   const supabase = await createServerSupabase();
-  if (!supabase || !email) return { error: "Enter the business email on the account." };
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl()}/auth/callback?next=/partner/reset`,
+  if (!supabase) {
+    logAuthEvent({ stage: "password_reset_request", code: "not_configured", configured: false });
+    return { error: "Password reset is temporarily unavailable. Try again later." };
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: authCallbackUrl(siteUrl(), "/partner/reset"),
   });
-  return { error: null, message: "If an account exists, a reset email will be sent." };
+  if (error) {
+    const classified = classifyResetSendError(error);
+    logAuthEvent({
+      stage: "password_reset_request",
+      code: classified?.logCode ?? error.code ?? "reset_failed",
+      status: error.status,
+      configured: true,
+    });
+    return { error: classified?.userMessage ?? "Password reset is temporarily unavailable. Try again later." };
+  }
+
+  logAuthEvent({ stage: "password_reset_request", code: "accepted", configured: true });
+  return { error: null, message: AUTH_STATUS_MESSAGES.reset_sent };
 }
 
 export async function updatePassword(formData: FormData) {
-  const password = formText(formData, "password");
+  const password = formPassword(formData);
   if (password.length < 10) return { error: "Use a password of at least 10 characters." };
   const supabase = await createServerSupabase();
-  if (!supabase) return { error: "Account services are not configured yet." };
+  if (!supabase) {
+    logAuthEvent({ stage: "password_update", code: "not_configured", configured: false });
+    return { error: "Account services are not configured yet." };
+  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!canUpdatePassword(user?.id)) {
+    logAuthEvent({ stage: "password_update", code: "session_required", configured: true });
+    return { error: "Sign in with a valid reset link before choosing a new password." };
+  }
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) return { error: "The password could not be updated. Request a new reset email." };
-  redirect("/partner/dashboard");
+  if (error) {
+    logAuthEvent({ stage: "password_update", code: error.code ?? "update_failed", status: error.status, configured: true });
+    return { error: "The password could not be updated. Request a new reset email." };
+  }
+  await supabase.auth.signOut();
+  redirect("/partner/login?status=password_updated");
 }
 
 export async function createOrganizationInvite(formData: FormData) {

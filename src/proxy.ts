@@ -3,8 +3,12 @@ import { isDevPreviewEnabled } from "@/lib/dev-preview";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function proxy(request: NextRequest) {
-  const response = await updateSession(request);
   const path = request.nextUrl.pathname;
+  if (path === "/auth/callback") {
+    return NextResponse.next({ request });
+  }
+
+  const response = await updateSession(request);
   const preview = isDevPreviewEnabled(request.nextUrl.hostname) || isDevPreviewEnabled(request.headers.get("host"));
 
   if (path.startsWith("/partner") && !["/partner/login", "/partner/register", "/partner/reset"].includes(path)) {

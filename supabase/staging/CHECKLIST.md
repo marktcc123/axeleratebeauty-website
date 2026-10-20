@@ -32,6 +32,23 @@
 
 不要把生产 refresh token、生产 Stripe live key 或生产 service role 填进 staging。
 
+## 默认邮件模板下的登录 / 密码恢复
+
+未做真实邮件验证前，不得写「恢复流程已通过」。
+
+1. `NEXT_PUBLIC_SITE_URL` 必须等于浏览器打开 Forgot password 的那个固定 staging 域名（无尾斜杠）。
+2. 登录页应显示 `Auth host: <project>.supabase.co`。该 host 必须属于**当前 staging 项目**，也就是已确认用户所在的项目。
+3. Supabase Authentication → URL Configuration：
+   - Site URL = 同一 staging 域名
+   - Redirect URLs 包含 `https://<staging-host>/auth/callback` 以及 `https://<staging-host>/auth/callback?next=/partner/reset`
+4. 保持默认 Recovery 模板（`{{ .ConfirmationURL }}`）。不要从 Dashboard「发送恢复邮件」测试 PKCE；必须从网站 Forgot password 发起，以便写入 verifier cookie。
+5. 不要配置 custom SMTP 也能测默认邮件。用内部测试邮箱，不要给真实客户发信。
+6. 只打开**最新一封**恢复邮件，且只点一次。成功时应到达 `/auth/callback?code=...&next=/partner/reset`，然后进入重置页。
+7. 若首次点击仍是 `otp_expired`：打开 Auth 日志，对比 `/recover`（或 recover 请求）与 `/verify` 的时间。
+   - 若 `/verify` 早于你的首次点击，链接已被提前消费；不能直接认定是邮件扫描，只能说明验证发生在点击之前。
+   - 若 `/verify` 与首次点击同时且仍过期，检查 token 有效期、是否点了旧信、或 Auth 项目是否与登录页 Auth host 不一致。
+8. 若链接落到首页且带 `#access_token` / `#error=otp_expired`，页面会转到登录页的固定错误文案，不会把 hash token 当成已登录。
+
 ## 需要你手动完成的控制台步骤
 
 1. 另建 **staging** Supabase 项目，不要用生产项目。

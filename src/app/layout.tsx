@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { AuthUrlErrorBridge } from "@/components/auth/AuthUrlErrorBridge";
 import { SiteChrome } from "@/components/site/SiteChrome";
 import "./globals.css";
 
@@ -44,6 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${emilio.variable} ${avenir.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans text-charcoal">
+        <AuthUrlErrorBridge />
         <SiteChrome>{children}</SiteChrome>
       </body>
     </html>

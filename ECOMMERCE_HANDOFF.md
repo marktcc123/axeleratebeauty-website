@@ -188,3 +188,4 @@ Homepage now has two paths: Full Salon System consultation and professional logi
 - Books posting or AOETO payout with verified real costs
 - Browser checkout with tax + shipping rate configured
 - Production apply of any SQL in this branch
+- Real staging email delivery and first-click password recovery. Local tests do **not** prove the recovery inbox flow.
