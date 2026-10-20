@@ -16,9 +16,10 @@ Rules:
 
 | Field | Value |
 | --- | --- |
-| HEAD | `5d03742d2dc0e3aa10fd6903929903219df55568` |
-| Preview unique | `https://axeleratebeauty-website-g9wbz21oc-axelerateglobal.vercel.app` (`dpl_7TSaY4t9EyK3B8nP1ywW2MrR4615`) |
-| Alias | tracks branch HEAD |
+| Functional HEAD (verified) | `5d03742d2dc0e3aa10fd6903929903219df55568` |
+| Evidence docs commit | `fc466f96cc32fa007db7d173f1d96933c6820a67` (screenshots + matrix only) |
+| Preview unique for functional | `https://axeleratebeauty-website-g9wbz21oc-axelerateglobal.vercel.app` (`dpl_7TSaY4t9EyK3B8nP1ywW2MrR4615`) |
+| Alias | tracks branch |
 | Real Preview evidence | `docs/ux-evidence/v3-*` |
 | Simulated only | `docs/ux-evidence/*-SIMULATED*`, `/dev/ui-fixtures` |
 
