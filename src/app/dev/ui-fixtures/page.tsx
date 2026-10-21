@@ -1,6 +1,6 @@
 import { CartEditor } from "@/components/commerce/CartEditor";
 import { CommerceHeader, CommercePage } from "@/components/commerce/CommercePage";
-import { ReplenishmentRow } from "@/components/commerce/ReplenishmentRow";
+import { ShopProductCard } from "@/components/commerce/ShopProductCard";
 import { UI_FIXTURE_CART_LINES, UI_FIXTURE_PRODUCTS } from "@/lib/commerce/ui-fixtures";
 
 export const metadata = {
@@ -38,10 +38,10 @@ export default function UiFixturesPage() {
         description="Long names, missing images, out of stock, missing price, and multi-line cart."
       />
 
-      <h2 className="mt-10 font-serif text-2xl text-ink">Catalog rows</h2>
-      <div className="mt-4 border-t border-sand-200">
+      <h2 className="mt-10 font-serif text-2xl text-ink">Shop grid (simulated)</h2>
+      <div className="commerce-grid mt-6">
         {UI_FIXTURE_PRODUCTS.map((product) => (
-          <ReplenishmentRow key={product.id} product={product} />
+          <ShopProductCard key={product.id} product={product} />
         ))}
       </div>
 

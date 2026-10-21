@@ -105,18 +105,25 @@ Rules:
 | Multi-store / cross-company | 外部阻塞 |
 | New pay/refund | 未执行（边界） |
 
-## Self-serve Tier 3 (this increment)
+## Self-serve Tier 3 (prior increment)
 
 | Path | Local / unit | Hosted Preview |
 | --- | --- | --- |
-| A. New independent → email verify → Tier 3 → price → cart | 通过 (unit: `purchase-eligibility`; register insert defaults in code) | **外部阻塞** — no approved hosted test signup / migration apply |
-| B. Existing chain Tier 1 retained + orders | 通过 (no-downgrade unit + existing Preview Tier 1 login path prior) | 未验证 on new SHA until Preview redeploy |
-| Privilege forgery (tier/role/org/admin ignored) | 通过 (register ignores client fields; unit defaults) | 外部阻塞 |
-| Typed chain name ≠ Belle/Brow Arc bind | 通过 (`commercial_model: null` on self-serve insert) | 外部阻塞 |
-| Suspended still blocked | 通过 (unit + guards) | 未验证 |
-| Invite join unchanged | 通过 (code path: invite skips self-serve insert) | 未验证 |
-| Nav Shop / Orders / Account + cart icon | 本地代码完成 | 未验证 (await Preview) |
-| 1440 / 390 / 320 layout after copy change | 未验证 | 未验证 |
+| A. New independent → email verify → Tier 3 → price → cart | 通过 (unit) | **外部阻塞** |
+| B. Existing chain Tier 1 retained | 通过 (unit) | 未验证 on new SHA |
+| Privilege forgery / name-bind / suspended / invite | 通过 (unit/code) | 外部阻塞 |
+
+## Brand assets + Shop grid (this increment)
+
+| Item | Local | Hosted Preview |
+| --- | --- | --- |
+| Official reference audit | 通过 | `docs/DERMABELL_REFERENCE_AUDIT.md` |
+| Asset map + Melting Mask size caution | 通过 | `docs/DERMABELL_ASSET_MAP.md` — **pending_size_verify** (not auto-bound) |
+| Public nav Shop / Programs / About | 通过 | `v4-home-1440`, `v4-home-390` |
+| Home series photography | 通过 | `v4-home-series-1440` |
+| Shop grid 1440 / 390 / 320 (simulated fixtures) | 通过 (simulated) | `v4-fixtures-grid-*-SIMULATED` |
+| Melting Mask official pack on commerce SKU | **未绑定** | Size verify blocked |
+| Preview redeploy of this SHA | — | 推送后验证 |
 
 ## Content / migration readiness
 

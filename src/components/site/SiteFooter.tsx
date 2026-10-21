@@ -13,20 +13,21 @@ export function SiteFooter() {
           </p>
         </div>
         <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Solutions</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Explore</p>
           <div className="mt-3 flex flex-col gap-2 text-sm">
-            <Link href="/full-salon-system">Full Salon System</Link>
+            <Link href="/for-professionals">Shop</Link>
             <Link href="/professional-programs">Professional Programs</Link>
-            <Link href="/store-evaluation">Store Evaluation</Link>
+            <Link href="/full-salon-system">Full Salon System</Link>
+            <Link href="/success-stories">Partner stories</Link>
           </div>
         </div>
         <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Partners</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Account & support</p>
           <div className="mt-3 flex flex-col gap-2 text-sm">
-            <Link href="/partner/login">Professional Login</Link>
-            <Link href="/partner/register">Request Professional Access</Link>
-            <Link href="/for-professionals">For Professionals</Link>
+            <Link href="/partner/login">Sign in</Link>
+            <Link href="/partner/register">Create business account</Link>
             <Link href="/contact">Contact</Link>
+            <Link href="/store-evaluation">Store evaluation</Link>
           </div>
         </div>
         <div>

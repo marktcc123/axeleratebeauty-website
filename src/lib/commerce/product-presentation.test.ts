@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   inventoryCustomerLabel,
+  productCardSpecLine,
   productListBlurb,
   productPackLabel,
   productPrimaryImage,
@@ -80,5 +81,14 @@ describe("product presentation", () => {
     expect(inventoryCustomerLabel("out_of_stock")).toBe("Out of stock");
     expect(inventoryCustomerLabel("untracked")).toBeNull();
     expect(productUnitLabel({ shippingAttributes: { unit_of_measure: "each" } })).toBe("each");
+  });
+
+  it("keeps SKU off the shop card spec line", () => {
+    expect(
+      productCardSpecLine({
+        ...base,
+        shippingAttributes: { pack_label: "70 g jar", unit_label: "each" },
+      }),
+    ).toBe("70 g jar · Sold each");
   });
 });

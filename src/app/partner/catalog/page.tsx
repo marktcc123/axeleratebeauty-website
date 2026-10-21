@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CommerceHeader, CommercePage } from "@/components/commerce/CommercePage";
-import { ReplenishmentRow } from "@/components/commerce/ReplenishmentRow";
+import { ShopProductCard } from "@/components/commerce/ShopProductCard";
+import { withBrandPresentation } from "@/data/brand-content";
 import { listAuthorizedProducts } from "@/lib/catalog";
 import { getSession } from "@/lib/session";
 import { canPurchase } from "@/lib/types";
@@ -14,7 +15,7 @@ export default async function PartnerCatalogPage({
   const session = await getSession();
   if (!session.userId) redirect("/partner/login");
   const { q, category } = await searchParams;
-  const products = await listAuthorizedProducts(session);
+  const products = (await listAuthorizedProducts(session)).map(withBrandPresentation);
   const query = (q ?? "").trim().toLowerCase();
   const filtered = products.filter((product) => {
     const matchesQuery =
@@ -78,9 +79,9 @@ export default async function PartnerCatalogPage({
             : "No products are available yet."}
         </p>
       ) : (
-        <div className="mt-4 border-t border-sand-200">
+        <div className="commerce-grid mt-10">
           {filtered.map((product) => (
-            <ReplenishmentRow key={product.id} product={product} />
+            <ShopProductCard key={product.id} product={product} />
           ))}
         </div>
       )}

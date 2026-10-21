@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AddToCartButton } from "@/components/commerce/AddToCartButton";
 import { ProductImage } from "@/components/commerce/ProductImage";
+import { contentEntryForProduct, type ProductResource } from "@/data/brand-content";
 import { authorizedPriceLabel, publicPriceLabel } from "@/lib/commerce/guards";
 import {
   inventoryCustomerLabel,
@@ -10,22 +11,44 @@ import {
 } from "@/lib/commerce/product-presentation";
 import type { Product } from "@/lib/types";
 
+function resourcesFromShipping(product: Product): ProductResource[] {
+  const raw = product.shippingAttributes?.resources;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const href = typeof row.href === "string" ? row.href.trim() : "";
+    const label = typeof row.label === "string" ? row.label.trim() : "";
+    if (!href || !label) return [];
+    const locale = row.locale === "en" || !row.locale ? "en" : null;
+    if (!locale) return [];
+    const kind = row.kind === "pdf" ? "pdf" : "guide";
+    return [{ label, href, locale, kind } satisfies ProductResource];
+  });
+}
+
 export function ProductDetailView({
   product,
   approved,
   related,
   backHref,
+  brandResources = [],
 }: {
   product: Product;
   approved: boolean;
   related: Product[];
   backHref?: string;
+  brandResources?: ProductResource[];
 }) {
   const primary = productPrimaryImage(product);
   const gallery = product.images.filter((src) => typeof src === "string" && src.trim()).map((src) => src.trim());
   const pack = productPackLabel(product);
   const unit = productUnitLabel(product);
   const stock = inventoryCustomerLabel(product.inventoryStatus);
+  const entry = contentEntryForProduct(product);
+  const resources = [...brandResources, ...resourcesFromShipping(product)].filter(
+    (resource, index, list) => list.findIndex((item) => item.href === resource.href) === index,
+  );
 
   return (
     <>
@@ -50,11 +73,10 @@ export function ProductDetailView({
         </div>
 
         <div className="min-w-0">
-          <p className="commerce-eyebrow">{product.category.replaceAll("_", " ")}</p>
-          <h1 className="commerce-title mt-2 text-balance">{product.name}</h1>
-          <p className="commerce-meta mt-3">SKU {product.sku}</p>
-          {pack ? <p className="mt-2 text-sm text-stone-deep">{pack}</p> : null}
+          <h1 className="commerce-title text-balance">{product.name}</h1>
+          {pack ? <p className="mt-3 text-sm text-stone-deep">{pack}</p> : null}
           {unit ? <p className="commerce-meta mt-1">Sold {unit}</p> : null}
+          <p className="commerce-meta mt-3">SKU {product.sku}</p>
 
           {approved ? (
             <p className="mt-6 text-xs uppercase tracking-[0.12em] text-muted">Your price</p>
@@ -86,51 +108,56 @@ export function ProductDetailView({
         </div>
       </div>
 
-      {product.description?.trim() ? (
-        <details className="mt-12 border-t border-sand-200 pt-8">
-          <summary className="cursor-pointer font-serif text-xl text-ink">Product details</summary>
-          <p className="mt-3 max-w-prose text-base leading-relaxed text-muted">{product.description.trim()}</p>
-        </details>
+      {product.shortDescription?.trim() || product.description?.trim() ? (
+        <section className="mt-14 border-t border-sand-200 pt-10">
+          <h2 className="font-serif text-2xl text-ink">Overview</h2>
+          {product.shortDescription?.trim() ? (
+            <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.shortDescription.trim()}</p>
+          ) : null}
+          {product.description?.trim() &&
+          product.description.trim() !== product.shortDescription?.trim() ? (
+            <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.description.trim()}</p>
+          ) : null}
+        </section>
       ) : null}
 
-      <div className="mt-16 grid gap-10 border-t border-sand-200 pt-12 md:grid-cols-2">
-        {product.intendedUse?.trim() ? (
+      <div className="mt-12 grid gap-10 md:grid-cols-2">
+        {product.intendedUse?.trim() || product.contents.length > 0 ? (
           <section>
-            <h2 className="font-serif text-2xl text-ink">Professional use</h2>
-            <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.intendedUse.trim()}</p>
-          </section>
-        ) : null}
-
-        {product.contents.length > 0 ? (
-          <section>
-            <h2 className="font-serif text-2xl text-ink">Package contents</h2>
-            <ul className="mt-3 space-y-2 text-muted">
-              {product.contents.map((item) => (
-                <li key={`${item.sku ?? ""}-${item.name}`}>
-                  {item.name}
-                  {item.quantity ? ` · ${item.quantity}` : ""}
-                  {item.sku ? ` · ${item.sku}` : ""}
-                </li>
-              ))}
-            </ul>
+            <h2 className="font-serif text-2xl text-ink">Product details</h2>
+            {product.intendedUse?.trim() ? (
+              <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.intendedUse.trim()}</p>
+            ) : null}
+            {product.contents.length > 0 ? (
+              <ul className="mt-3 space-y-2 text-muted">
+                {product.contents.map((item) => (
+                  <li key={`${item.sku ?? ""}-${item.name}`}>
+                    {item.name}
+                    {item.quantity ? ` · ${item.quantity}` : ""}
+                    {item.sku ? ` · ${item.sku}` : ""}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </section>
         ) : null}
 
         {product.usageNotes?.trim() ? (
           <section>
-            <h2 className="font-serif text-2xl text-ink">Usage</h2>
+            <h2 className="font-serif text-2xl text-ink">How to use</h2>
             <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.usageNotes.trim()}</p>
           </section>
         ) : null}
 
-        {product.precautions?.trim() ? (
+        {typeof product.shippingAttributes.ingredients === "string" &&
+        product.shippingAttributes.ingredients.trim() ? (
           <section>
-            <h2 className="font-serif text-2xl text-ink">Precautions</h2>
-            <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.precautions.trim()}</p>
+            <h2 className="font-serif text-2xl text-ink">Ingredients</h2>
+            <p className="mt-3 max-w-prose leading-relaxed text-muted">
+              {product.shippingAttributes.ingredients.trim()}
+            </p>
           </section>
-        ) : null}
-
-        {product.highlights.length > 0 ? (
+        ) : product.highlights.length > 0 ? (
           <section>
             <h2 className="font-serif text-2xl text-ink">Highlights</h2>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
@@ -140,7 +167,39 @@ export function ProductDetailView({
             </ul>
           </section>
         ) : null}
+
+        {product.precautions?.trim() ? (
+          <section>
+            <h2 className="font-serif text-2xl text-ink">Precautions</h2>
+            <p className="mt-3 max-w-prose leading-relaxed text-muted">{product.precautions.trim()}</p>
+          </section>
+        ) : null}
       </div>
+
+      {resources.length > 0 ? (
+        <section className="mt-12 border-t border-sand-200 pt-10">
+          <h2 className="font-serif text-2xl text-ink">Professional resources</h2>
+          <ul className="mt-4 space-y-2 text-sm">
+            {resources.map((resource) => (
+              <li key={resource.href}>
+                <a
+                  href={resource.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline-offset-4 hover:underline"
+                >
+                  {resource.kind === "pdf" ? "Download PDF" : resource.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : entry?.matchStatus === "pending_size_verify" ? (
+        <p className="mt-12 border-t border-sand-200 pt-8 text-sm text-muted">
+          Official English product materials are recorded for operator review. They stay hidden until
+          packaging size is confirmed for this SKU.
+        </p>
+      ) : null}
 
       {related.length > 0 ? (
         <div className="mt-16 border-t border-sand-200 pt-12">

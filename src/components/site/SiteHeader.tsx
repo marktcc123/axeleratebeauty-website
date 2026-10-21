@@ -11,12 +11,9 @@ import type { SessionContext } from "@/lib/types";
 import { canPurchase } from "@/lib/types";
 
 const marketingLinks = [
-  { href: "/", label: "Home" },
-  { href: "/full-salon-system", label: "Full Salon System" },
-  { href: "/professional-programs", label: "Programs" },
-  { href: "/success-stories", label: "Real Partners" },
   { href: "/for-professionals", label: "Shop" },
-  { href: "/contact", label: "Contact" },
+  { href: "/professional-programs", label: "Professional Programs" },
+  { href: "/success-stories", label: "About" },
 ];
 
 function isPartnerWorkspace(pathname: string) {
@@ -104,13 +101,10 @@ export function SiteHeader({
             </>
           ) : (
             <>
-              <Link href="/store-evaluation" className="bg-charcoal px-4 py-2 text-sm font-medium text-cream hover:bg-ink">
-                Book a Consultation
-              </Link>
               <Link href={accountHref} className="text-sm text-stone-deep">
-                {session.userId ? (approved ? "Shop" : "My Account") : "Professional Login"}
+                {session.userId ? "Account" : "Sign in"}
               </Link>
-              {session.userId ? <CartNavLink count={cartCount} /> : null}
+              <CartNavLink count={cartCount} />
             </>
           )}
         </div>
@@ -167,17 +161,12 @@ export function SiteHeader({
                 </>
               ) : (
                 <>
-                  <Link href="/store-evaluation" onClick={() => setOpen(false)} className="py-3">
-                    Book a Consultation
-                  </Link>
                   <Link href={accountHref} onClick={() => setOpen(false)} className="py-3">
-                    {session.userId ? (approved ? "Shop" : "My Account") : "Professional Login"}
+                    {session.userId ? "Account" : "Sign in"}
                   </Link>
-                  {session.userId ? (
-                    <div className="py-3">
-                      <CartNavLink count={cartCount} onNavigate={() => setOpen(false)} />
-                    </div>
-                  ) : null}
+                  <div className="py-3">
+                    <CartNavLink count={cartCount} onNavigate={() => setOpen(false)} />
+                  </div>
                   {session.userId ? (
                     <form action={logoutBusiness}>
                       <button type="submit" className="py-3 text-left">

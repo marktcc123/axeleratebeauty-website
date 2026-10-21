@@ -15,9 +15,10 @@ Keep `CATALOG_SOURCE=supabase_cache`. No production Zoho writes.
 | Long description | `products.description` | — | Empty “TBD” modules |
 | Professional use | `products.intended_use` | — | — |
 | Highlights / usage / precautions | existing columns | — | Fake certifications |
-| Images | `products.images[]` URLs | — | Stock photo as this SKU |
+| Images | `products.images[]` URLs | Brand map `candidateImage` only if `matchStatus=confirmed` | Unverified official pack / wrong size |
+| EN product guide | `shipping_attributes.resources[]` | `brand-content` resources when `applyResources` | Hotlinking unverified docs as this SKU |
 | Customer price | `product_offers` / pricing resolve | — | Public price without auth |
-| Sellable flag | `publication_status` + inventory | — | — |
+| Sellable flag | `publication_status` + inventory | — | Auto-import from dermabellglobal.com |
 
 ## JSON backfill rules (`20261021_product_display_fields.sql`)
 

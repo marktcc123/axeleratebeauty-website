@@ -56,6 +56,16 @@ export function productSpecLine(
   return bits.join(" · ");
 }
 
+/** Shop card: pack + sell unit only — SKU stays on the detail page. */
+export function productCardSpecLine(
+  product: Pick<Product, "packLabel" | "unitLabel" | "contents" | "shippingAttributes" | "category">,
+) {
+  const pack = productPackLabel(product);
+  const unit = productUnitLabel(product);
+  const bits = [pack, unit ? `Sold ${unit}` : null].filter(Boolean);
+  return bits.length ? bits.join(" · ") : null;
+}
+
 export function productListBlurb(
   product: Pick<Product, "shortDescription" | "intendedUse" | "description" | "highlights" | "shippingAttributes">,
 ) {
