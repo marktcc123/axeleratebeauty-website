@@ -16,12 +16,13 @@ Rules:
 
 | Field | Value |
 | --- | --- |
-| Functional HEAD (verified) | `5d03742d2dc0e3aa10fd6903929903219df55568` |
-| Evidence docs commit | `fc466f96cc32fa007db7d173f1d96933c6820a67` (screenshots + matrix only) |
-| Preview unique for functional | `https://axeleratebeauty-website-g9wbz21oc-axelerateglobal.vercel.app` (`dpl_7TSaY4t9EyK3B8nP1ywW2MrR4615`) |
-| Alias | tracks branch |
-| Real Preview evidence | `docs/ux-evidence/v3-*` |
+| Functional HEAD (brand + Shop grid) | `c05ce5f66b44244b10556badcb48836137808cb6` |
+| Evidence docs commit | `b2032d8311ea9552202436790412b68c762c00fe` (v4 local screenshots) |
+| Prior commerce HEAD | `5d03742` / v3 Preview evidence still valid for Orders money path |
+| Alias | https://axeleratebeauty-website-git-feature-phas-590110-axelerateglobal.vercel.app |
+| Local brand evidence | `docs/ux-evidence/v4-*` |
 | Simulated only | `docs/ux-evidence/*-SIMULATED*`, `/dev/ui-fixtures` |
+| Hosted Preview verify of v4 | **未验证** until Vercel finishes this push |
 
 ## Evidence correction log
 
