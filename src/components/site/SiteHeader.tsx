@@ -12,6 +12,7 @@ import { canPurchase } from "@/lib/types";
 
 const marketingLinks = [
   { href: "/for-professionals", label: "Shop" },
+  { href: "/full-salon-system", label: "Full Salon System" },
   { href: "/professional-programs", label: "Professional Programs" },
   { href: "/success-stories", label: "About" },
 ];
@@ -79,7 +80,7 @@ export function SiteHeader({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm tracking-wide transition hover:text-ink ${pathname === link.href ? "text-ink" : "text-stone-deep/80"}`}
+                className={`text-sm tracking-wide transition hover:text-ink ${pathname === link.href || pathname.startsWith(`${link.href}/`) ? "text-ink" : "text-stone-deep/80"}`}
               >
                 {link.label}
               </Link>
