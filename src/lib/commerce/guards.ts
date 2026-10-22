@@ -12,7 +12,9 @@ export class CommerceError extends Error {
       | "invalid_quantity"
       | "price_unavailable"
       | "empty_cart"
-      | "not_configured",
+      | "not_configured"
+      | "location_required"
+      | "price_changed",
   ) {
     super(message);
     this.name = "CommerceError";
@@ -21,16 +23,34 @@ export class CommerceError extends Error {
 
 export function assertApprovedBuyer(input: {
   userId?: string | null;
+  organizationId?: string | null;
   verificationStatus?: string | null;
+  activeLocationId?: string | null;
+  emailVerified?: boolean;
 }) {
   if (!input.userId) {
-    throw new CommerceError("Sign in with an approved business account to purchase.", "unauthenticated");
+    throw new CommerceError("Sign in to purchase.", "unauthenticated");
+  }
+  if (input.emailVerified === false) {
+    throw new CommerceError("Confirm your email before purchasing.", "unapproved");
   }
   if (input.verificationStatus === "suspended") {
-    throw new CommerceError("This business account is suspended.", "suspended");
+    throw new CommerceError("This business account is paused. Contact support for help.", "suspended");
+  }
+  if (input.verificationStatus === "pending" || input.verificationStatus === "rejected") {
+    throw new CommerceError(
+      "Purchasing is not available for this account yet. Contact support if you need access.",
+      "unapproved",
+    );
   }
   if (input.verificationStatus !== "approved") {
-    throw new CommerceError("Purchasing is available after business verification.", "unapproved");
+    throw new CommerceError("Purchasing is not available for this account.", "unapproved");
+  }
+  if (!input.organizationId) {
+    throw new CommerceError("A business profile is required before purchasing.", "unapproved");
+  }
+  if (!input.activeLocationId) {
+    throw new CommerceError("Confirm a shipping location before checkout.", "location_required");
   }
 }
 
@@ -38,8 +58,14 @@ export function assertPurchasableProduct(product: Product | null) {
   if (!product || product.publicationStatus !== "active") {
     throw new CommerceError("This product is not available for purchase.", "unpublished");
   }
+  if (product.productKind === "full_system" || product.productKind === "internal_lot") {
+    throw new CommerceError("This item is not available as a standard checkout product.", "unpublished");
+  }
+  if (product.shippingAttributes?.comingSoon === true || product.shippingAttributes?.orderingMode === "browse_only") {
+    throw new CommerceError("This product is not available for online ordering yet.", "price_unavailable");
+  }
   if (product.professionalPriceCents == null || product.professionalPriceCents < 0) {
-    throw new CommerceError("This product does not have an approved price.", "price_unavailable");
+    throw new CommerceError("This product does not have an approved price for the selected store.", "price_unavailable");
   }
   if (product.inventoryStatus === "out_of_stock") {
     throw new CommerceError("This product is currently out of stock.", "out_of_stock");
@@ -85,15 +111,30 @@ export function cartTotals(lines: { lineTotalCents: number }[]) {
   const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
   return {
     subtotalCents,
-    shippingCents: 0,
-    taxCents: 0,
-    totalCents: subtotalCents,
+    shippingCents: null as number | null,
+    taxCents: null as number | null,
+    shippingPending: true,
+    taxPending: true,
+    merchandiseCents: subtotalCents,
+    totalCents: null as number | null,
   };
 }
 
+/** Public/marketing surfaces: only show an amount when the SKU is marked publicly visible. */
 export function publicPriceLabel(product: Pick<Product, "professionalPriceCents" | "publicPriceVisible" | "currency">) {
   if (!product.publicPriceVisible || product.professionalPriceCents == null) {
     return "Professional Pricing Available Upon Account Approval";
+  }
+  return formatMoney(product.professionalPriceCents, product.currency);
+}
+
+/**
+ * Partner catalog after approval: show the server-resolved authorized unit price.
+ * Does not use publicPriceVisible — that flag is only for anonymous/public marketing.
+ */
+export function authorizedPriceLabel(product: Pick<Product, "professionalPriceCents" | "currency">) {
+  if (product.professionalPriceCents == null) {
+    return "Price pending for this store";
   }
   return formatMoney(product.professionalPriceCents, product.currency);
 }
@@ -103,4 +144,9 @@ export function formatMoney(cents: number, currency = "USD") {
     style: "currency",
     currency,
   }).format(cents / 100);
+}
+
+export function formatPendingMoney(cents: number | null, pending: boolean, currency = "USD") {
+  if (pending || cents == null) return "To be calculated";
+  return formatMoney(cents, currency);
 }

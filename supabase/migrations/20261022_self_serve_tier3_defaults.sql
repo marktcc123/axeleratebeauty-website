@@ -1,0 +1,24 @@
+-- Self-serve US B2B defaults (documentation + optional future DB defaults).
+-- DO NOT apply to staging/production without explicit approval.
+-- Supabase remains read-only for this branch until ops approves.
+--
+-- Application layer (registerBusiness) already inserts independent orgs as:
+--   verification_status = 'approved'
+--   price_tier = 3
+--   commercial_model = null
+-- Invite joins do NOT change the host organization's tier or status.
+--
+-- This migration does NOT batch-activate historical pending accounts.
+-- Ops must list and review pending rows before any activation (see docs/PENDING_ACCOUNT_ACTIVATION.md).
+
+-- Optional column defaults for future inserts that bypass the app (service scripts).
+-- Safe only when ops confirms no conflicting insert paths write pending + null tier intentionally.
+-- ALTER TABLE public.organizations
+--   ALTER COLUMN verification_status SET DEFAULT 'approved',
+--   ALTER COLUMN price_tier SET DEFAULT 3;
+
+-- Read-only inventory query for ops (run manually; do not auto-update):
+-- SELECT id, name, verification_status, price_tier, created_at
+-- FROM public.organizations
+-- WHERE verification_status = 'pending'
+-- ORDER BY created_at ASC;

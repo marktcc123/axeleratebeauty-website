@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { loginBusiness, registerBusiness, requestPasswordReset } from "@/app/actions/auth";
+import { loginBusiness, registerBusiness, requestPasswordReset, updatePassword } from "@/app/actions/auth";
 
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
@@ -16,9 +16,15 @@ export function LoginForm() {
           if (result?.error) setError(result.error);
         }}
       >
-        <label className="text-sm">Business email<input name="email" type="email" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-        <label className="text-sm">Password<input name="password" type="password" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-        {error && <p className="text-sm text-accent-tac">{error}</p>}
+        <label className="text-sm" htmlFor="login-email">
+          Business email
+          <input id="login-email" name="email" type="email" required autoComplete="email" className="mt-1 w-full border border-sand-200 px-3 py-2" />
+        </label>
+        <label className="text-sm" htmlFor="login-password">
+          Password
+          <input id="login-password" name="password" type="password" required autoComplete="current-password" className="mt-1 w-full border border-sand-200 px-3 py-2" />
+        </label>
+        {error && <p className="text-sm text-accent-tac" role="alert">{error}</p>}
         <button className="bg-charcoal px-6 py-3 text-sm text-cream">Sign in</button>
       </form>
       <form
@@ -30,7 +36,8 @@ export function LoginForm() {
         }}
       >
         <p className="text-sm text-muted">Forgot password</p>
-        <input name="email" type="email" placeholder="Business email" className="border border-sand-200 px-3 py-2" />
+        <label className="sr-only" htmlFor="reset-email">Business email</label>
+        <input id="reset-email" name="email" type="email" placeholder="Business email" autoComplete="email" className="border border-sand-200 px-3 py-2" />
         <button className="text-left text-sm underline-offset-4 hover:underline">Send reset email</button>
         {message && <p className="text-sm text-muted">{message}</p>}
       </form>
@@ -38,43 +45,86 @@ export function LoginForm() {
   );
 }
 
-export function RegisterForm() {
+export function RegisterForm({ inviteToken }: { inviteToken?: string }) {
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   return (
     <form
       className="grid gap-4"
       action={async (formData) => {
         const result = await registerBusiness(formData);
-        if (result?.error) setError(result.error);
+        if (result?.error) {
+          setError(result.error);
+          setMessage(null);
+          return;
+        }
+        setError(null);
+        setMessage(result?.message ?? null);
       }}
     >
-      <label className="text-sm">Full name<input name="fullName" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">Business email<input name="email" type="email" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">Password (10+ characters)<input name="password" type="password" required minLength={10} className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">Business name<input name="businessName" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">Business phone<input name="phone" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">Website (optional)<input name="website" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">Business type
-        <select name="businessType" className="mt-1 w-full border border-sand-200 px-3 py-2">
-          <option value="salon">Salon</option>
-          <option value="esthetician">Esthetician</option>
-          <option value="spa">Spa</option>
-          <option value="chain">Multi-location</option>
-          <option value="other">Other beauty business</option>
-        </select>
-      </label>
-      <label className="text-sm">Street address<input name="addressLine1" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">City<input name="city" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">State<input name="state" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">ZIP<input name="postalCode" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
-      <label className="text-sm">Professional license information, if relevant<textarea name="licenseInfo" rows={3} className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+      {inviteToken ? <input type="hidden" name="inviteToken" value={inviteToken} /> : null}
+      <label className="text-sm" htmlFor="reg-name">Full name<input id="reg-name" name="fullName" required autoComplete="name" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+      <label className="text-sm" htmlFor="reg-email">Business email<input id="reg-email" name="email" type="email" required autoComplete="email" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+      <label className="text-sm" htmlFor="reg-password">Password (10+ characters)<input id="reg-password" name="password" type="password" required minLength={10} autoComplete="new-password" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+      {!inviteToken && (
+        <>
+          <label className="text-sm" htmlFor="reg-business">Business name<input id="reg-business" name="businessName" required className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+          <p className="text-sm text-muted">
+            Creates a new business account you can shop with after email confirmation. Typing a company name does not join an existing group — use an invitation for that.
+          </p>
+        </>
+      )}
+      <label className="text-sm" htmlFor="reg-phone">Business phone<input id="reg-phone" name="phone" required autoComplete="tel" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+      {!inviteToken && (
+        <>
+          <label className="text-sm" htmlFor="reg-website">Website (optional)<input id="reg-website" name="website" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+          <label className="text-sm" htmlFor="reg-type">Business type
+            <select id="reg-type" name="businessType" className="mt-1 w-full border border-sand-200 px-3 py-2">
+              <option value="salon">Salon</option>
+              <option value="esthetician">Esthetician</option>
+              <option value="spa">Spa</option>
+              <option value="chain">Multi-location</option>
+              <option value="other">Other beauty business</option>
+            </select>
+          </label>
+          <label className="text-sm" htmlFor="reg-address">Street address<input id="reg-address" name="addressLine1" required autoComplete="street-address" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+          <label className="text-sm" htmlFor="reg-city">City<input id="reg-city" name="city" required autoComplete="address-level2" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+          <label className="text-sm" htmlFor="reg-state">State<input id="reg-state" name="state" required autoComplete="address-level1" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+          <label className="text-sm" htmlFor="reg-zip">ZIP<input id="reg-zip" name="postalCode" required autoComplete="postal-code" className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+          <label className="text-sm" htmlFor="reg-license">Professional license information, if relevant<textarea id="reg-license" name="licenseInfo" rows={3} className="mt-1 w-full border border-sand-200 px-3 py-2" /></label>
+        </>
+      )}
+      {inviteToken && (
+        <p className="text-sm text-muted">This registration uses an administrator invitation and will join the assigned business and store only.</p>
+      )}
       <label className="flex items-start gap-2 text-sm">
         <input name="accepted" type="checkbox" className="mt-1" />
         <span>I acknowledge the Privacy Policy and that Terms of Sale will apply to any purchase. Draft policy pages are not final legal terms.</span>
       </label>
-      {error && <p className="text-sm text-accent-tac">{error}</p>}
+      {error && <p className="text-sm text-accent-tac" role="alert">{error}</p>}
+      {message && <p className="text-sm text-muted" role="status">{message}</p>}
       <button className="bg-charcoal px-6 py-3 text-sm text-cream">Submit registration</button>
+    </form>
+  );
+}
+
+export function ResetPasswordForm() {
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <form
+      className="grid gap-4"
+      action={async (formData) => {
+        const result = await updatePassword(formData);
+        if (result?.error) setError(result.error);
+      }}
+    >
+      <label className="text-sm" htmlFor="new-password">
+        New password
+        <input id="new-password" name="password" type="password" required minLength={10} autoComplete="new-password" className="mt-1 w-full border border-sand-200 px-3 py-2" />
+      </label>
+      {error && <p className="text-sm text-accent-tac" role="alert">{error}</p>}
+      <button className="bg-charcoal px-6 py-3 text-sm text-cream">Update password</button>
     </form>
   );
 }

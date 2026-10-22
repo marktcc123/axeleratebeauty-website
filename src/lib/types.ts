@@ -2,6 +2,7 @@ export type VerificationStatus = "pending" | "approved" | "rejected" | "suspende
 export type PublicationStatus = "draft" | "active" | "archived";
 export type InventoryStatus = "untracked" | "in_stock" | "out_of_stock";
 export type OrgRole = "pending" | "member" | "company_admin";
+export type LocationRole = "buyer" | "store_admin" | "hq_admin";
 export type OrderStatus =
   | "pending_payment"
   | "paid"
@@ -10,11 +11,21 @@ export type OrderStatus =
   | "delivered"
   | "cancelled"
   | "refunded";
+export type OrderKind = "replenishment" | "program" | "contract_installment";
+export type CatalogSource = "supabase_cache" | "zoho_commerce";
 
 export type PackageContent = {
   name: string;
   sku?: string;
   quantity?: number;
+};
+
+export type AuthorizedLocation = {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  role: LocationRole;
 };
 
 export type Product = {
@@ -24,6 +35,12 @@ export type Product = {
   name: string;
   description: string | null;
   intendedUse: string | null;
+  /** Optional list blurb; prefer over truncating description when present. */
+  shortDescription: string | null;
+  /** Customer pack/spec line, e.g. "70 g jar". */
+  packLabel: string | null;
+  /** Sell unit, e.g. "per jar". */
+  unitLabel: string | null;
   category: string;
   highlights: string[];
   contents: PackageContent[];
@@ -39,15 +56,28 @@ export type Product = {
   publicationStatus: PublicationStatus;
   reorderEligible: boolean;
   relatedProductIds: string[];
+  zohoCrmProductId?: string | null;
+  zohoCommerceProductId?: string | null;
+  zohoVariantId?: string | null;
+  productKind?: "replenishment" | "program" | "full_system" | "internal_lot";
 };
 
 export type CartItem = {
   productId: string;
   quantity: number;
+  lineId?: string;
 };
 
 export type CartState = {
   items: CartItem[];
+  version: number;
+  clearedOrderNumbers: string[];
+};
+
+export type CheckoutClaim = {
+  orderNumber: string;
+  items: CartItem[];
+  cartVersion: number;
 };
 
 export type SessionContext = {
@@ -58,17 +88,20 @@ export type SessionContext = {
   organizationId: string | null;
   organizationName: string | null;
   verificationStatus: VerificationStatus | null;
+  /** Supabase Auth email confirmation — separate from org purchase status and price tier. */
+  emailVerified: boolean;
   orgRole: OrgRole | null;
+  locations: AuthorizedLocation[];
+  activeLocationId: string | null;
 };
 
-export function canPurchase(session: SessionContext | null) {
-  return Boolean(
-    session?.userId &&
-      session.organizationId &&
-      session.verificationStatus === "approved",
-  );
-}
+export { canPurchase } from "@/lib/auth/purchase-eligibility";
 
 export function isPending(session: SessionContext | null) {
   return session?.verificationStatus === "pending";
+}
+
+export function canAccessLocation(session: SessionContext | null, locationId: string | null) {
+  if (!session?.userId || !locationId) return false;
+  return session.locations.some((location) => location.id === locationId);
 }

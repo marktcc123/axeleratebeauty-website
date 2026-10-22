@@ -14,7 +14,7 @@ export default async function ProfessionalKitsPage() {
           <p>
             These packages are intended for licensed professionals where required, estheticians,
             and approved wholesale accounts. Public visitors may review published information.
-            Exact purchasing permission is enforced after business verification.
+            Sign in to shop published products at your business price. Public pages do not show professional dollars.
           </p>
         </PageIntro>
 
@@ -25,11 +25,10 @@ export default async function ProfessionalKitsPage() {
 
         {products.length === 0 ? (
           <div className="mt-16 border border-sand-200 bg-white p-8">
-            <h2 className="font-serif text-2xl text-ink">Catalog pending approval</h2>
+            <h2 className="font-serif text-2xl text-ink">Products coming soon</h2>
             <p className="mt-3 max-w-2xl text-muted">
-              The four professional packages have not been published yet. Names, prices, SKU lists,
-              quantities, and images will appear here only after they are entered by an administrator
-              and marked Active. Draft products are never shown or sold.
+              Published products will appear here after an administrator marks them Active.
+              Draft products are never shown or sold.
             </p>
           </div>
         ) : (

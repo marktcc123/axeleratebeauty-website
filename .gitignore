@@ -37,6 +37,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local Cursor MCP / browser sessions — never commit
+.cursor/mcp.json
+.cursor/
+.playwright-mcp/
+playwright/.auth/
+verify-*.png
+supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

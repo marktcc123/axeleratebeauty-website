@@ -1,43 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { addToCart } from "@/app/actions/cart";
+import { QtyControl } from "@/components/commerce/QtyControl";
 
 export function AddToCartButton({
   productId,
   quantity = 1,
   allowQuantity = false,
+  productName = "item",
 }: {
   productId: string;
   quantity?: number;
   allowQuantity?: boolean;
+  productName?: string;
 }) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState(quantity);
 
   return (
-    <div>
-      {allowQuantity && (
-        <label className="mb-3 block text-sm text-muted">
-          Quantity
-          <input
-            type="number"
-            min={1}
-            max={99}
+    <div className="space-y-3">
+      {allowQuantity ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-muted">Quantity</span>
+          <QtyControl
+            label={productName}
             value={selectedQuantity}
-            onChange={(event) => setSelectedQuantity(Number(event.target.value) || 1)}
-            className="mt-1 w-24 border border-sand-200 bg-white px-3 py-2"
+            disabled={pending}
+            onChange={setSelectedQuantity}
           />
-        </label>
-      )}
+        </div>
+      ) : null}
       <button
         type="button"
         disabled={pending}
+        className="commerce-btn"
         onClick={async () => {
           setPending(true);
+          setMessage(null);
+          setError(null);
           const result = await addToCart(productId, selectedQuantity);
           setPending(false);
           if (result.redirectTo) {
@@ -45,17 +51,28 @@ export function AddToCartButton({
             return;
           }
           if (result.error) {
-            setMessage(result.error);
+            setError(result.error);
             return;
           }
-          setMessage("Added to cart.");
+          setMessage(`Added ${selectedQuantity} to cart.`);
           router.refresh();
         }}
-        className="bg-charcoal px-4 py-2 text-sm text-cream hover:bg-ink disabled:opacity-60"
       >
-        {pending ? "Adding..." : "Add to Cart"}
+        {pending ? "Adding…" : "Add to cart"}
       </button>
-      {message && <p className="mt-2 text-xs text-muted">{message}</p>}
+      {error ? (
+        <p className="text-sm text-accent-tac" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {message ? (
+        <p className="text-sm text-muted" role="status">
+          {message}{" "}
+          <Link href="/cart" className="underline underline-offset-4">
+            View cart
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

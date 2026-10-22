@@ -6,7 +6,7 @@ import { PageIntro } from "@/components/site/PageIntro";
 import { PROFESSIONAL_PRICING_MESSAGE, listPublishedPrograms } from "@/lib/program-catalog";
 
 export const metadata: Metadata = {
-  title: "Professional Korean Facial Programs | Dermabell Professional",
+  title: "Professional Korean Facial Programs",
   description:
     "Explore four focused Korean facial programs for professional beauty businesses, with curated backbar products and structured service concepts.",
   alternates: { canonical: "/professional-programs" },
@@ -38,20 +38,20 @@ export default function ProfessionalProgramsPage() {
         </div>
         <ProgramCompare programs={programs} />
         <div className="mt-20 border-t border-sand-200 pt-12">
-          <h2 className="font-serif text-3xl text-ink">Apply for professional access</h2>
+          <h2 className="font-serif text-3xl text-ink">Next steps</h2>
           <p className="mt-3 max-w-2xl text-muted">
-            Registration lets beauty professionals request account review. It does not reveal
-            confidential prices or unlock checkout.
+            Shop published replenishment products after you create a business account and confirm
+            your email. Full salon systems and training stay consultative — talk with our U.S. team.
           </p>
           <div className="mt-6 flex flex-wrap gap-4">
-            <Link href="/partner/register" className="bg-charcoal px-6 py-3 text-sm text-cream">
-              Apply for Professional Access
+            <Link href="/for-professionals" className="bg-charcoal px-6 py-3 text-sm text-cream">
+              Shop Products
             </Link>
-            <Link href="/contact" className="text-sm underline-offset-4 hover:underline">
-              Talk to Our Team
+            <Link href="/store-evaluation" className="border border-charcoal px-6 py-3 text-sm text-charcoal">
+              Request a consultation
             </Link>
             <Link href="/full-salon-system" className="text-sm text-muted underline-offset-4 hover:underline">
-              Explore the Full Salon System
+              Full Salon System
             </Link>
           </div>
         </div>

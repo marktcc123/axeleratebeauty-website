@@ -1,45 +1,60 @@
 import { cookies } from "next/headers";
-import type { CartItem, CartState } from "@/lib/types";
+import { ensureCartLineIds, mergeCheckoutClaim, parseCart, parseCheckoutClaims } from "@/lib/cart-state";
+import type { CartState, CheckoutClaim } from "@/lib/types";
 
-const COOKIE = "dermabell_cart";
+export {
+  applyCartQuantityUpdates,
+  cartQuantitiesDirty,
+  emptyCart,
+  ensureCartLineIds,
+  parseCart,
+  parseCheckoutClaims,
+  subtractCartItems,
+  upsertItem,
+} from "@/lib/cart-state";
 
-export function emptyCart(): CartState {
-  return { items: [] };
-}
+const CART_COOKIE = "dermabell_cart";
+const CLAIMS_COOKIE = "dermabell_checkout_claims";
 
-export function parseCart(raw: string | undefined): CartState {
-  if (!raw) return emptyCart();
-  try {
-    const parsed = JSON.parse(raw) as CartState;
-    if (!parsed || !Array.isArray(parsed.items)) return emptyCart();
-    return {
-      items: parsed.items
-        .filter((item): item is CartItem => Boolean(item?.productId) && Number(item.quantity) > 0)
-        .map((item) => ({ productId: String(item.productId), quantity: Math.min(99, Math.max(1, Number(item.quantity))) })),
-    };
-  } catch {
-    return emptyCart();
-  }
+function cookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 30,
+  };
 }
 
 export async function readCart(): Promise<CartState> {
   const store = await cookies();
-  return parseCart(store.get(COOKIE)?.value);
+  return parseCart(store.get(CART_COOKIE)?.value);
 }
 
 export async function writeCart(cart: CartState) {
   const store = await cookies();
-  store.set(COOKIE, JSON.stringify(cart), {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  const stamped = ensureCartLineIds(cart);
+  const next: CartState = {
+    items: stamped.items,
+    version: stamped.version + 1,
+    clearedOrderNumbers: stamped.clearedOrderNumbers,
+  };
+  store.set(CART_COOKIE, JSON.stringify(next), cookieOptions());
+  return next;
 }
 
-export function upsertItem(cart: CartState, productId: string, quantity: number): CartState {
-  const items = cart.items.filter((item) => item.productId !== productId);
-  if (quantity > 0) items.push({ productId, quantity });
-  return { items };
+export async function readCheckoutClaims(): Promise<CheckoutClaim[]> {
+  const store = await cookies();
+  return parseCheckoutClaims(store.get(CLAIMS_COOKIE)?.value);
+}
+
+export async function addCheckoutClaim(claim: CheckoutClaim) {
+  const store = await cookies();
+  const next = mergeCheckoutClaim(await readCheckoutClaims(), claim);
+  store.set(CLAIMS_COOKIE, JSON.stringify(next), cookieOptions());
+}
+
+export async function writeCheckoutClaims(claims: CheckoutClaim[]) {
+  const store = await cookies();
+  store.set(CLAIMS_COOKIE, JSON.stringify(claims), cookieOptions());
 }

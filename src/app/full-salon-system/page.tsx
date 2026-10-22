@@ -7,7 +7,7 @@ import { Trust } from "@/components/Trust";
 import { PageIntro } from "@/components/site/PageIntro";
 
 export const metadata: Metadata = {
-  title: "Full Salon System | Dermabell Professional",
+  title: "Full Salon System",
   description:
     "A complete salon implementation solution for beauty businesses adding Korean facial services. Book a store consultation — this is not a standard checkout item.",
   alternates: { canonical: "/full-salon-system" },

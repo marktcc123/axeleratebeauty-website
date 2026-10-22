@@ -1,24 +1,28 @@
 import { headers } from "next/headers";
+import { readActiveLocationId, resolveActiveLocation } from "@/lib/active-location";
 import { DEV_PREVIEW_SESSION, isDevPreviewEnabled } from "@/lib/dev-preview";
 import { createServerSupabase } from "@/lib/supabase/server";
-import type { SessionContext } from "@/lib/types";
+import type { AuthorizedLocation, SessionContext } from "@/lib/types";
+
+const empty: SessionContext = {
+  userId: null,
+  email: null,
+  fullName: null,
+  isPlatformAdmin: false,
+  organizationId: null,
+  organizationName: null,
+  verificationStatus: null,
+  emailVerified: false,
+  orgRole: null,
+  locations: [],
+  activeLocationId: null,
+};
 
 export async function getSession(): Promise<SessionContext> {
   const host = (await headers()).get("host");
   if (isDevPreviewEnabled(host)) {
     return DEV_PREVIEW_SESSION;
   }
-
-  const empty: SessionContext = {
-    userId: null,
-    email: null,
-    fullName: null,
-    isPlatformAdmin: false,
-    organizationId: null,
-    organizationName: null,
-    verificationStatus: null,
-    orgRole: null,
-  };
 
   const supabase = await createServerSupabase();
   if (!supabase) return empty;
@@ -38,6 +42,28 @@ export async function getSession(): Promise<SessionContext> {
     ? profile?.organizations[0]
     : profile?.organizations;
 
+  const { data: memberships } = await supabase
+    .from("location_memberships")
+    .select("role, locations(id, name, city, state, is_active)")
+    .eq("user_id", user.id);
+
+  const locations: AuthorizedLocation[] = (memberships ?? [])
+    .map((row) => {
+      const location = Array.isArray(row.locations) ? row.locations[0] : row.locations;
+      if (!location?.id || location.is_active === false) return null;
+      return {
+        id: location.id,
+        name: location.name,
+        city: location.city ?? null,
+        state: location.state ?? null,
+        role: row.role,
+      } satisfies AuthorizedLocation;
+    })
+    .filter((location): location is AuthorizedLocation => Boolean(location));
+
+  const requested = await readActiveLocationId();
+  const activeLocationId = resolveActiveLocation(locations, requested);
+
   return {
     userId: user.id,
     email: user.email ?? null,
@@ -46,6 +72,9 @@ export async function getSession(): Promise<SessionContext> {
     organizationId: profile?.organization_id ?? null,
     organizationName: organization?.name ?? null,
     verificationStatus: organization?.verification_status ?? null,
+    emailVerified: Boolean(user.email_confirmed_at),
     orgRole: profile?.role ?? "pending",
+    locations,
+    activeLocationId,
   };
 }

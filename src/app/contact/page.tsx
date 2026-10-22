@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { InquiryForm } from "@/components/forms/InquiryForm";
 import { PageIntro } from "@/components/site/PageIntro";
 import { getSession } from "@/lib/session";
+
+export const metadata: Metadata = {
+  title: "Contact",
+  description: "Contact the U.S. Dermabell Professional team at Axelerate Inc. for consultations, proposals, or partner support.",
+  alternates: { canonical: "/contact" },
+};
 
 export default async function ContactPage() {
   const session = await getSession();
