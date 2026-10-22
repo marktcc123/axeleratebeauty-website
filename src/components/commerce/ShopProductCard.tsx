@@ -6,6 +6,7 @@ import { useState } from "react";
 import { addToCart } from "@/app/actions/cart";
 import { ProductImage } from "@/components/commerce/ProductImage";
 import { QtyControl } from "@/components/commerce/QtyControl";
+import { productCardPurchaseEnabled } from "@/lib/catalog-browse";
 import { authorizedPriceLabel } from "@/lib/commerce/guards";
 import {
   inventoryCustomerLabel,
@@ -20,11 +21,13 @@ export function ShopProductCard({ product }: { product: Product }) {
   const [qty, setQty] = useState(1);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const comingSoon = product.shippingAttributes?.comingSoon === true;
   const { unavailable, canAdd, stockHint } = replenishmentRowState(product);
   const image = productPrimaryImage(product);
   const detailHref = `/partner/catalog/${product.slug}`;
   const spec = productCardSpecLine(product);
   const stock = inventoryCustomerLabel(product.inventoryStatus);
+  const showPurchase = productCardPurchaseEnabled(product);
 
   return (
     <article className="commerce-card flex h-full flex-col">
@@ -39,43 +42,52 @@ export function ShopProductCard({ product }: { product: Product }) {
           </Link>
         </h2>
         {spec ? <p className="commerce-meta mt-2">{spec}</p> : null}
+        {comingSoon ? <p className="mt-2 text-xs uppercase tracking-[0.12em] text-muted">Coming soon</p> : null}
 
-        <div className="mt-4">
-          <p className="text-xs uppercase tracking-[0.12em] text-muted">Your price</p>
-          <p className="commerce-price mt-1">{authorizedPriceLabel(product)}</p>
-          {stock && !unavailable ? <p className="commerce-meta mt-1">{stock}</p> : null}
-          {stockHint ? (
-            <p className={`mt-1 text-sm ${unavailable ? "text-accent-tac" : "text-muted"}`}>{stockHint}</p>
-          ) : null}
-        </div>
+        {showPurchase ? (
+          <div className="mt-4">
+            <p className="text-xs uppercase tracking-[0.12em] text-muted">Your price</p>
+            <p className="commerce-price mt-1">{authorizedPriceLabel(product)}</p>
+            {stock && !unavailable ? <p className="commerce-meta mt-1">{stock}</p> : null}
+            {stockHint ? (
+              <p className={`mt-1 text-sm ${unavailable ? "text-accent-tac" : "text-muted"}`}>{stockHint}</p>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="mt-auto pt-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <QtyControl label={product.name} value={qty} disabled={!canAdd || pending} onChange={setQty} />
-            <button
-              type="button"
-              disabled={!canAdd || pending}
-              className="commerce-btn"
-              onClick={async () => {
-                setPending(true);
-                setMessage(null);
-                const result = await addToCart(product.id, qty);
-                setPending(false);
-                if (result.redirectTo) {
-                  router.push(result.redirectTo);
-                  return;
-                }
-                if (result.error) {
-                  setMessage(result.error);
-                  return;
-                }
-                setMessage(`Added ${qty}.`);
-                router.refresh();
-              }}
-            >
-              {pending ? "Adding…" : "Add to cart"}
-            </button>
-          </div>
+          {showPurchase ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <QtyControl label={product.name} value={qty} disabled={!canAdd || pending} onChange={setQty} />
+              <button
+                type="button"
+                disabled={!canAdd || pending}
+                className="commerce-btn"
+                onClick={async () => {
+                  setPending(true);
+                  setMessage(null);
+                  const result = await addToCart(product.id, qty);
+                  setPending(false);
+                  if (result.redirectTo) {
+                    router.push(result.redirectTo);
+                    return;
+                  }
+                  if (result.error) {
+                    setMessage(result.error);
+                    return;
+                  }
+                  setMessage(`Added ${qty}.`);
+                  router.refresh();
+                }}
+              >
+                {pending ? "Adding…" : "Add to cart"}
+              </button>
+            </div>
+          ) : (
+            <Link href={detailHref} className="commerce-btn inline-flex">
+              View details
+            </Link>
+          )}
           {message ? (
             <p className="mt-2 text-sm text-muted" role="status">
               {message}{" "}

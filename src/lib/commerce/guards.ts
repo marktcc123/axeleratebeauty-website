@@ -61,6 +61,9 @@ export function assertPurchasableProduct(product: Product | null) {
   if (product.productKind === "full_system" || product.productKind === "internal_lot") {
     throw new CommerceError("This item is not available as a standard checkout product.", "unpublished");
   }
+  if (product.shippingAttributes?.comingSoon === true || product.shippingAttributes?.orderingMode === "browse_only") {
+    throw new CommerceError("This product is not available for online ordering yet.", "price_unavailable");
+  }
   if (product.professionalPriceCents == null || product.professionalPriceCents < 0) {
     throw new CommerceError("This product does not have an approved price for the selected store.", "price_unavailable");
   }

@@ -11,11 +11,7 @@ export function HomeShopPreview({
   products: Product[];
   session: SessionContext;
 }) {
-  const shopHref = session.userId
-    ? canPurchase(session)
-      ? "/partner/catalog"
-      : "/partner/dashboard"
-    : "/for-professionals";
+  const shopHref = session.userId ? "/partner/catalog" : "/for-professionals";
   const preview = products.slice(0, 6);
   const showPrice = canPurchase(session);
 
@@ -45,7 +41,7 @@ export function HomeShopPreview({
         ) : (
           <ul className="commerce-grid mt-12">
             {preview.map((product) => {
-              const href = showPrice
+              const href = session.userId
                 ? `/partner/catalog/${product.slug}`
                 : `/professional-kits/${product.slug}`;
               const spec = productCardSpecLine(product);
@@ -59,9 +55,11 @@ export function HomeShopPreview({
                     />
                     <h3 className="mt-4 font-serif text-xl text-ink">{product.name}</h3>
                     {spec ? <p className="commerce-meta mt-2">{spec}</p> : null}
-                    <p className="commerce-price mt-3">
-                      {showPrice ? authorizedPriceLabel(product) : publicPriceLabel(product)}
-                    </p>
+                    {showPrice && product.professionalPriceCents != null ? (
+                      <p className="commerce-price mt-3">{authorizedPriceLabel(product)}</p>
+                    ) : !session.userId ? (
+                      <p className="commerce-price mt-3">{publicPriceLabel(product)}</p>
+                    ) : null}
                   </Link>
                 </li>
               );

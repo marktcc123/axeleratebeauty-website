@@ -112,6 +112,21 @@ describe("commerce guards", () => {
     expect(() => assertPurchasableProduct({ ...product, professionalPriceCents: null })).toThrow(CommerceError);
   });
 
+  it("blocks browse-only and coming-soon catalog items even if a price sneaks in", () => {
+    expect(() =>
+      assertPurchasableProduct({
+        ...product,
+        shippingAttributes: { orderingMode: "browse_only" },
+      }),
+    ).toThrow(CommerceError);
+    expect(() =>
+      assertPurchasableProduct({
+        ...product,
+        shippingAttributes: { comingSoon: true },
+      }),
+    ).toThrow(CommerceError);
+  });
+
   it("keeps public marketing prices gated on publicPriceVisible", () => {
     expect(
       publicPriceLabel({

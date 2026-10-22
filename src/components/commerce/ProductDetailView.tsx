@@ -1,14 +1,7 @@
 import Link from "next/link";
-import { AddToCartButton } from "@/components/commerce/AddToCartButton";
-import { ProductImage } from "@/components/commerce/ProductImage";
+import { ProductBuyBox } from "@/components/commerce/ProductBuyBox";
 import { contentEntryForProduct, type ProductResource } from "@/data/brand-content";
-import { authorizedPriceLabel, publicPriceLabel } from "@/lib/commerce/guards";
-import {
-  inventoryCustomerLabel,
-  productPackLabel,
-  productPrimaryImage,
-  productUnitLabel,
-} from "@/lib/commerce/product-presentation";
+import type { CatalogDetailVariant } from "@/lib/catalog-browse";
 import type { Product } from "@/lib/types";
 
 function resourcesFromShipping(product: Product): ProductResource[] {
@@ -27,6 +20,35 @@ function resourcesFromShipping(product: Product): ProductResource[] {
   });
 }
 
+function variantsFromProduct(product: Product): CatalogDetailVariant[] {
+  const raw = product.shippingAttributes?.variants;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return [
+      {
+        id: product.id,
+        packLabel: product.packLabel,
+        barcode: typeof product.shippingAttributes?.barcode === "string" ? product.shippingAttributes.barcode : null,
+        images: product.images,
+        comingSoon: product.shippingAttributes?.comingSoon === true,
+      },
+    ];
+  }
+  return raw.flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    return [
+      {
+        id: typeof row.id === "string" ? row.id : `${product.id}-${index}`,
+        packLabel: typeof row.packLabel === "string" ? row.packLabel : null,
+        packSpecRaw: typeof row.packSpecRaw === "string" ? row.packSpecRaw : null,
+        barcode: typeof row.barcode === "string" ? row.barcode : null,
+        images: Array.isArray(row.images) ? row.images.filter((src): src is string => typeof src === "string") : [],
+        comingSoon: row.comingSoon === true,
+      } satisfies CatalogDetailVariant,
+    ];
+  });
+}
+
 export function ProductDetailView({
   product,
   approved,
@@ -40,11 +62,7 @@ export function ProductDetailView({
   backHref?: string;
   brandResources?: ProductResource[];
 }) {
-  const primary = productPrimaryImage(product);
-  const gallery = product.images.filter((src) => typeof src === "string" && src.trim()).map((src) => src.trim());
-  const pack = productPackLabel(product);
-  const unit = productUnitLabel(product);
-  const stock = inventoryCustomerLabel(product.inventoryStatus);
+  const variants = variantsFromProduct(product);
   const entry = contentEntryForProduct(product);
   const resources = [...brandResources, ...resourcesFromShipping(product)].filter(
     (resource, index, list) => list.findIndex((item) => item.href === resource.href) === index,
@@ -52,61 +70,7 @@ export function ProductDetailView({
 
   return (
     <>
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-14">
-        <div className="space-y-3">
-          <ProductImage
-            src={primary}
-            alt={product.name}
-            sizes="(max-width: 1024px) 100vw, 560px"
-            priority
-            className="max-w-xl"
-          />
-          {gallery.length > 1 ? (
-            <ul className="grid grid-cols-4 gap-2 sm:max-w-xl">
-              {gallery.slice(0, 4).map((src) => (
-                <li key={src}>
-                  <ProductImage src={src} alt="" sizes="120px" />
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-
-        <div className="min-w-0">
-          <h1 className="commerce-title text-balance">{product.name}</h1>
-          {pack ? <p className="mt-3 text-sm text-stone-deep">{pack}</p> : null}
-          {unit ? <p className="commerce-meta mt-1">Sold {unit}</p> : null}
-          <p className="commerce-meta mt-3">SKU {product.sku}</p>
-
-          {approved ? (
-            <p className="mt-6 text-xs uppercase tracking-[0.12em] text-muted">Your price</p>
-          ) : null}
-          <p className={`commerce-price ${approved ? "mt-1" : "mt-6"}`}>
-            {approved ? authorizedPriceLabel(product) : publicPriceLabel(product)}
-          </p>
-          {stock ? <p className="commerce-meta mt-2">{stock}</p> : null}
-
-          <div className="mt-8">
-            {approved && product.professionalPriceCents != null ? (
-              <AddToCartButton productId={product.id} allowQuantity productName={product.name} />
-            ) : approved ? (
-              <p className="text-sm text-muted">
-                No valid price for this location. Purchasing stays locked until a price is assigned.
-              </p>
-            ) : (
-              <Link href="/partner/login" className="commerce-btn inline-flex">
-                Sign in to purchase
-              </Link>
-            )}
-          </div>
-
-          {backHref ? (
-            <Link href={backHref} className="mt-6 inline-block text-sm underline-offset-4 hover:underline">
-              Back to Shop
-            </Link>
-          ) : null}
-        </div>
-      </div>
+      <ProductBuyBox product={product} variants={variants} approved={approved} backHref={backHref} />
 
       {product.shortDescription?.trim() || product.description?.trim() ? (
         <section className="mt-14 border-t border-sand-200 pt-10">

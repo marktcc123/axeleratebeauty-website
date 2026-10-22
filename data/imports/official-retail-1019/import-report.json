@@ -1,0 +1,32 @@
+{
+  "sourceFile": "Global Official Retail Price List (Retail 공유용) 1019.xlsx",
+  "sourceSheet": "시트1",
+  "sourceRowRange": "2-67",
+  "sourceRecordCount": 66,
+  "productGroupCount": 50,
+  "comingSoonCount": 4,
+  "imageMatchedCount": 66,
+  "imageMissingCount": 0,
+  "multiComponentCount": 4,
+  "mergedNameInheritCount": 15,
+  "aliasRenameRows": [
+    59
+  ],
+  "issues": [],
+  "meltingMask": [
+    {
+      "barcode": "8809645782874",
+      "pack": "70g",
+      "row": 62
+    },
+    {
+      "barcode": "8809645783581",
+      "pack": "220g",
+      "row": 63
+    }
+  ],
+  "dbStatus": "not_applied_supabase_readonly",
+  "zohoStatus": "not_written",
+  "previewLoader": "src/lib/catalog-official-retail.ts reads data/imports/official-retail-1019/catalog.json",
+  "note": "No prices imported. New items are browse-only until priced in DB."
+}

@@ -1,4 +1,12 @@
 import { CATALOG_PUBLIC_SELECT } from "@/lib/catalog-columns";
+import {
+  getOfficialRetailProductBySlug,
+  getOfficialRetailProductsByIds,
+  listOfficialRetailProducts,
+  OFFICIAL_PRICE_BRIDGES,
+  officialRetailCatalogEnabled,
+  productBarcodes,
+} from "@/lib/catalog-official-retail";
 import { catalogSource, isZohoCommerceConfigured } from "@/lib/config";
 import { getAuthorizedOffers } from "@/lib/pricing";
 import { getSession } from "@/lib/session";
@@ -110,63 +118,163 @@ export function stripProtectedPrice(product: Product): Product {
   };
 }
 
+async function listSupabasePublishedProducts() {
+  try {
+    const rows = await readPublicRows();
+    return rows
+      .filter((row) => row.product_kind !== "internal_lot" && row.product_kind !== "full_system")
+      .map(mapPublicProduct);
+  } catch {
+    return [] as Product[];
+  }
+}
+
+/**
+ * Preview / feature catalog: official retail spreadsheet products are the browseable source.
+ * Supabase rows remain available for priced bridges; STG fixtures are not converted into formal barcodes.
+ */
 export async function listPublishedProducts() {
-  const rows = await readPublicRows();
-  return rows
-    .filter((row) => row.product_kind !== "internal_lot" && row.product_kind !== "full_system")
-    .map(mapPublicProduct);
+  if (officialRetailCatalogEnabled()) {
+    const official = listOfficialRetailProducts();
+    if (official.length > 0) return official;
+  }
+  return listSupabasePublishedProducts();
 }
 
 export async function getPublishedProduct(slug: string) {
-  const rows = await readPublicRows(undefined, slug);
-  const row = rows[0];
-  if (!row || row.product_kind === "internal_lot") return null;
-  return mapPublicProduct(row);
+  if (officialRetailCatalogEnabled()) {
+    const official = getOfficialRetailProductBySlug(slug);
+    if (official) return official;
+  }
+  try {
+    const rows = await readPublicRows(undefined, slug);
+    const row = rows[0];
+    if (!row || row.product_kind === "internal_lot") return null;
+    return mapPublicProduct(row);
+  } catch {
+    return null;
+  }
 }
 
 export async function getProductsByIds(ids: string[]) {
   if (ids.length === 0) return [];
-  const rows = await readPublicRows(ids);
-  return rows.map(mapPublicProduct);
+  if (officialRetailCatalogEnabled()) {
+    const official = getOfficialRetailProductsByIds(ids);
+    if (official.length > 0) return official;
+  }
+  try {
+    const rows = await readPublicRows(ids);
+    return rows.map(mapPublicProduct);
+  } catch {
+    return [];
+  }
+}
+
+async function resolveBridgeStagingIds(products: Product[]) {
+  const slugByOfficialId = new Map<string, string>();
+  for (const product of products) {
+    for (const barcode of productBarcodes(product)) {
+      const bridge = OFFICIAL_PRICE_BRIDGES[barcode];
+      if (bridge) slugByOfficialId.set(product.id, bridge.stagingSlug);
+    }
+  }
+  if (slugByOfficialId.size === 0) return new Map<string, string>();
+
+  const stagingIdByOfficialId = new Map<string, string>();
+  for (const [officialId, slug] of slugByOfficialId) {
+    try {
+      const rows = await readPublicRows(undefined, slug);
+      const row = rows[0];
+      if (row?.id) stagingIdByOfficialId.set(officialId, row.id);
+    } catch {
+      // Bridge optional when staging row missing.
+    }
+  }
+  return stagingIdByOfficialId;
+}
+
+function applyOffer(
+  product: Product,
+  offer: { priceCents: number; currency: string; availableQuantity: number | null; inventoryStatus?: Product["inventoryStatus"] } | undefined,
+  purchaseProductId?: string,
+): Product {
+  if (!offer) {
+    return {
+      ...stripProtectedPrice(product),
+      shippingAttributes: {
+        ...product.shippingAttributes,
+        orderingMode: "browse_only",
+      },
+    };
+  }
+  return {
+    ...product,
+    professionalPriceCents: offer.priceCents,
+    currency: offer.currency,
+    availableQuantity: offer.availableQuantity,
+    inventoryStatus: offer.inventoryStatus ?? product.inventoryStatus,
+    reorderEligible: true,
+    shippingAttributes: {
+      ...product.shippingAttributes,
+      orderingMode: "priced",
+      // Cart/checkout must charge the staged commerce row; display identity stays official.
+      ...(purchaseProductId && purchaseProductId !== product.id
+        ? { purchaseProductId, priceBridge: true }
+        : {}),
+    },
+  };
 }
 
 export async function listAuthorizedProducts(session?: SessionContext | null) {
   const current = session ?? (await getSession());
   const products = await listPublishedProducts();
   if (!canPurchase(current)) return products.map(stripProtectedPrice);
-  const offers = await getAuthorizedOffers(
-    current.organizationId!,
-    current.activeLocationId!,
-    products.map((product) => product.id),
-  );
+
+  const bridgeIds = await resolveBridgeStagingIds(products);
+  const lookupIds = [
+    ...new Set([
+      ...products.map((product) => product.id),
+      ...bridgeIds.values(),
+    ]),
+  ];
+  const offers = await getAuthorizedOffers(current.organizationId!, current.activeLocationId!, lookupIds);
+
   return products.map((product) => {
-    const offer = offers.get(product.id);
-    if (!offer) return stripProtectedPrice(product);
-    return {
-      ...product,
-      professionalPriceCents: offer.priceCents,
-      currency: offer.currency,
-      availableQuantity: offer.availableQuantity,
-      inventoryStatus: offer.inventoryStatus ?? product.inventoryStatus,
-    };
+    const direct = offers.get(product.id);
+    if (direct) return applyOffer(product, direct);
+    const bridgedStagingId = bridgeIds.get(product.id);
+    const bridged = bridgedStagingId ? offers.get(bridgedStagingId) : undefined;
+    return applyOffer(product, bridged, bridgedStagingId);
   });
 }
 
 export async function getAuthorizedProductsByIds(ids: string[], session?: SessionContext | null) {
   const current = session ?? (await getSession());
-  const products = await getProductsByIds(ids);
+  // Cart may hold staging purchase IDs while Shop links use official slugs/ids.
+  const official = officialRetailCatalogEnabled() ? getOfficialRetailProductsByIds(ids) : [];
+  const missing = ids.filter((id) => !official.some((product) => product.id === id));
+  let supabaseProducts: Product[] = [];
+  if (missing.length > 0) {
+    try {
+      const rows = await readPublicRows(missing);
+      supabaseProducts = rows.map(mapPublicProduct);
+    } catch {
+      supabaseProducts = [];
+    }
+  }
+  const products = [...official, ...supabaseProducts];
   if (!canPurchase(current)) return products.map(stripProtectedPrice);
-  const offers = await getAuthorizedOffers(current.organizationId!, current.activeLocationId!, ids);
+
+  const bridgeIds = await resolveBridgeStagingIds(products);
+  const lookupIds = [...new Set([...ids, ...bridgeIds.values(), ...products.map((p) => p.id)])];
+  const offers = await getAuthorizedOffers(current.organizationId!, current.activeLocationId!, lookupIds);
+
   return products.map((product) => {
-    const offer = offers.get(product.id);
-    if (!offer) return stripProtectedPrice(product);
-    return {
-      ...product,
-      professionalPriceCents: offer.priceCents,
-      currency: offer.currency,
-      availableQuantity: offer.availableQuantity,
-      inventoryStatus: offer.inventoryStatus ?? product.inventoryStatus,
-    };
+    const direct = offers.get(product.id);
+    if (direct) return applyOffer(product, direct);
+    const bridgedStagingId = bridgeIds.get(product.id);
+    const bridged = bridgedStagingId ? offers.get(bridgedStagingId) : undefined;
+    return applyOffer(product, bridged, bridgedStagingId);
   });
 }
 

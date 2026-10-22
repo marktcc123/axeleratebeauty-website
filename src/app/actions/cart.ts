@@ -43,12 +43,19 @@ export async function addToCart(productId: string, quantity = 1) {
     const products = await getAuthorizedProductsByIds([productId], session);
     const product = products[0];
     if (!product || product.publicationStatus !== "active" || product.professionalPriceCents == null) {
-      return { error: "This product is not available for the selected store." };
+      return { error: "This product is not available for online ordering yet." };
     }
+    if (product.shippingAttributes?.comingSoon === true || product.shippingAttributes?.orderingMode === "browse_only") {
+      return { error: "This product is not available for online ordering yet." };
+    }
+    const cartProductId =
+      typeof product.shippingAttributes?.purchaseProductId === "string" && product.shippingAttributes.purchaseProductId
+        ? product.shippingAttributes.purchaseProductId
+        : product.id;
     const cart = await readCart();
-    const existing = cart.items.find((item) => item.productId === productId);
+    const existing = cart.items.find((item) => item.productId === cartProductId);
     const nextQty = normalizeQuantity((existing?.quantity ?? 0) + quantity);
-    await writeCart(upsertItem(cart, productId, nextQty, existing?.lineId ?? crypto.randomUUID()));
+    await writeCart(upsertItem(cart, cartProductId, nextQty, existing?.lineId ?? crypto.randomUUID()));
     revalidatePath("/cart");
     return { error: null };
   } catch (error) {
