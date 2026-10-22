@@ -3,6 +3,17 @@ import type { Product } from "@/lib/types";
 /** Barcodes that may inherit an existing staged offer — never invent sibling-size prices. */
 export const OFFICIAL_PRICE_BRIDGE_BARCODES = new Set(["8809645782874"]);
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Preview official IDs (orp-…) are not Postgres UUIDs — never send them to UUID columns. */
+export function isPostgresUuid(value: string) {
+  return UUID_RE.test(value);
+}
+
+export function postgresUuids(ids: string[]) {
+  return [...new Set(ids.filter(isPostgresUuid))];
+}
+
 /** Client-safe browse/purchase flags — no filesystem imports. */
 export function isBrowseOnlyProduct(product: Product) {
   const attrs = product.shippingAttributes ?? {};

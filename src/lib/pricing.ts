@@ -1,3 +1,4 @@
+import { postgresUuids } from "@/lib/catalog-browse";
 import { resolveAuthorizedPrice, type OfferRow, type PriceTier } from "@/lib/commerce/tier-pricing";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import type { InventoryStatus } from "@/lib/types";
@@ -13,7 +14,9 @@ export type AuthorizedOffer = {
 
 export async function getAuthorizedOffers(organizationId: string, locationId: string, productIds: string[]) {
   const offers = new Map<string, AuthorizedOffer>();
-  if (productIds.length === 0) return offers;
+  // Official Preview IDs (orp-…) are not UUIDs; querying them crashes Postgres.
+  const uuidProductIds = postgresUuids(productIds);
+  if (uuidProductIds.length === 0) return offers;
 
   const service = await createServiceSupabase();
   if (!service) return offers;
@@ -32,7 +35,7 @@ export async function getAuthorizedOffers(organizationId: string, locationId: st
   const { data: rows, error } = await service
     .from("product_offers")
     .select("product_id, price_cents, currency, location_id, organization_id, price_tier, effective_from, effective_to")
-    .in("product_id", productIds);
+    .in("product_id", uuidProductIds);
   if (error) throw new Error(`Offer lookup failed: ${error.message}`);
 
   const mapped: OfferRow[] = (rows ?? []).map((row) => ({
@@ -49,11 +52,11 @@ export async function getAuthorizedOffers(organizationId: string, locationId: st
   const { data: products, error: productError } = await service
     .from("products")
     .select("id, available_quantity, inventory_status")
-    .in("id", productIds);
+    .in("id", uuidProductIds);
   if (productError) throw new Error(`Stock lookup failed: ${productError.message}`);
   const stock = new Map((products ?? []).map((row) => [row.id, row]));
 
-  for (const productId of productIds) {
+  for (const productId of uuidProductIds) {
     const resolved = resolveAuthorizedPrice(mapped, {
       productId,
       organizationId,

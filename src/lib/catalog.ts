@@ -1,4 +1,5 @@
 import { CATALOG_PUBLIC_SELECT } from "@/lib/catalog-columns";
+import { postgresUuids } from "@/lib/catalog-browse";
 import {
   getOfficialRetailProductBySlug,
   getOfficialRetailProductsByIds,
@@ -98,8 +99,11 @@ async function readPublicRows(ids?: string[], slug?: string) {
   if (!supabase) return [];
 
   let query = supabase.from("catalog_products").select(CATALOG_PUBLIC_SELECT);
-  if (ids) query = query.in("id", ids);
-  else if (slug) query = query.eq("slug", slug);
+  if (ids) {
+    const uuidIds = postgresUuids(ids);
+    if (uuidIds.length === 0) return [];
+    query = query.in("id", uuidIds);
+  } else if (slug) query = query.eq("slug", slug);
   else query = query.order("name");
 
   const { data, error } = await query;
@@ -231,12 +235,10 @@ export async function listAuthorizedProducts(session?: SessionContext | null) {
   if (!canPurchase(current)) return products.map(stripProtectedPrice);
 
   const bridgeIds = await resolveBridgeStagingIds(products);
-  const lookupIds = [
-    ...new Set([
-      ...products.map((product) => product.id),
-      ...bridgeIds.values(),
-    ]),
-  ];
+  const lookupIds = postgresUuids([
+    ...products.map((product) => product.id),
+    ...bridgeIds.values(),
+  ]);
   const offers = await getAuthorizedOffers(current.organizationId!, current.activeLocationId!, lookupIds);
 
   return products.map((product) => {
@@ -252,7 +254,7 @@ export async function getAuthorizedProductsByIds(ids: string[], session?: Sessio
   const current = session ?? (await getSession());
   // Cart may hold staging purchase IDs while Shop links use official slugs/ids.
   const official = officialRetailCatalogEnabled() ? getOfficialRetailProductsByIds(ids) : [];
-  const missing = ids.filter((id) => !official.some((product) => product.id === id));
+  const missing = postgresUuids(ids.filter((id) => !official.some((product) => product.id === id)));
   let supabaseProducts: Product[] = [];
   if (missing.length > 0) {
     try {
@@ -266,7 +268,7 @@ export async function getAuthorizedProductsByIds(ids: string[], session?: Sessio
   if (!canPurchase(current)) return products.map(stripProtectedPrice);
 
   const bridgeIds = await resolveBridgeStagingIds(products);
-  const lookupIds = [...new Set([...ids, ...bridgeIds.values(), ...products.map((p) => p.id)])];
+  const lookupIds = postgresUuids([...ids, ...bridgeIds.values(), ...products.map((p) => p.id)]);
   const offers = await getAuthorizedOffers(current.organizationId!, current.activeLocationId!, lookupIds);
 
   return products.map((product) => {

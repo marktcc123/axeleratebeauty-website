@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   isBrowseOnlyProduct,
+  isPostgresUuid,
+  postgresUuids,
   productCardPurchaseEnabled,
   variantIsPurchasable,
 } from "./catalog-browse";
@@ -59,5 +61,13 @@ describe("catalog browse helpers", () => {
         shippingAttributes: { catalogSource: "official-retail-1019", orderingMode: "browse_only" },
       }),
     ).toBe(true);
+  });
+
+  it("filters Preview official IDs out of Postgres UUID lookups", () => {
+    expect(isPostgresUuid("orp-d9dfd1aebb62")).toBe(false);
+    expect(isPostgresUuid("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")).toBe(true);
+    expect(postgresUuids(["orp-d9dfd1aebb62", "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"])).toEqual([
+      "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+    ]);
   });
 });
